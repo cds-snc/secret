@@ -2,6 +2,8 @@
 
 Secret is a small application that allows you to share passwords, secret messages, or private links securely with another person. It does this by hiding your message behind a unique URL that can only be viewed once. Messages automatically expire after a predefined time limit if they are not viewed.
 
+![screen_demo](https://user-images.githubusercontent.com/867334/102815971-3e59da80-439b-11eb-8fa7-281b98fe1df5.gif)
+
 ## How it works
 
 Secret uses an AWS KMS key to [generate symmetric key pairs](https://docs.aws.amazon.com/kms/latest/developerguide/symm-asymm-concepts.html#symmetric-cmks). It uses these keys to encrypt messages and store them securely in a [DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html) table. Messages can only be decrypted if the app has access to the correct KMS key in AWS. This guarantees that if the table data gets exposed, it can not be decrypted at will.
