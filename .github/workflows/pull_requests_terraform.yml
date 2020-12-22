@@ -48,12 +48,12 @@ jobs:
 
       - name: Get touched Terragrunt modules
         run: |
-          MODULES=`echo '${{ steps.changed-files.all }}' | jq -c '[.[] | match("(.*aws?)\/(.*)\/").captures[1].string] | unique | select(length > 0)'`
+          MODULES=`echo '${{ steps.changed-files.added_modified }}' | jq -c '[.[] | match("(.*aws?)\/(.*)\/").captures[1].string] | unique | select(length > 0)'`
           echo "MODULES=$MODULES" >> $GITHUB_ENV
 
       - name: Get touched Terragrunt configurations
         run: |
-          CONFIGS=`echo '${{ steps.changed-files.all }}' | jq -c '[.[] | match("(.*terragrunt?)\/(.*)\/").captures[1].string] | unique | select(length > 0)'`
+          CONFIGS=`echo '${{ steps.changed-files.added_modified }}' | jq -c '[.[] | match("(.*terragrunt?)\/(.*)\/").captures[1].string] | unique | select(length > 0)'`
           echo "CONFIGS=$CONFIGS" >> $GITHUB_ENV
 
       - name: Plan aws/acm
