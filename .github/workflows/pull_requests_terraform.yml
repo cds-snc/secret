@@ -49,7 +49,6 @@ jobs:
       - name: Get touched Terragrunt modules
         run: |
           MODULES=`echo '${{ steps.changed-files.all }}' | jq -c '[.[] | match("(.*aws?)\/(.*)\/").captures[1].string] | unique | select(length > 0)'`
-          echo $MODULES
           echo "MODULES=$MODULES" >> $GITHUB_ENV
 
       - name: Get touched Terragrunt configurations
@@ -65,13 +64,14 @@ jobs:
 
       - name: Install python if needed
         if: contains(env.MODULES, 'lambda') || contains(env.CONFIGS, 'lambda')
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
         with:
-          python-version: '3.6'
+          python-version: '3.8'
 
       - name: Build lambda if needed
         if: contains(env.MODULES, 'lambda') || contains(env.CONFIGS, 'lambda')
         run: |
+          python -m pip install --upgrade pip
           make install
           make package
 
