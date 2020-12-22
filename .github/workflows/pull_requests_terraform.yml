@@ -67,9 +67,10 @@ jobs:
         with:
           python-version: '3.8'
 
+      - run: echo "/home/runner/.local/bin" >> $GITHUB_PATH
+
       - name: Build lambda if needed
         run: |
-          echo "/home/runner/.local/bin" >> $GITHUB_PATH
           python -m pip install --upgrade pip
           make install
           make package
