@@ -42,7 +42,7 @@ jobs:
 
       - name: Plan aws/acm
         run: |
-          cd env/acm
+          cd terragrunt/acm
           ../../bin/terragrunt plan --terragrunt-non-interactive
 
       - name: Install python if needed
