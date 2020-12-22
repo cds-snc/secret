@@ -40,24 +40,7 @@ jobs:
           chmod +x bin/terragrunt
           echo "bin" >> $GITHUB_PATH
 
-      - name: Get changed files
-        id: changed-files
-        uses: jitterbit/get-changed-files@v1
-        with:
-          format: 'json'
-
-      - name: Get touched Terragrunt modules
-        run: |
-          MODULES=`echo '${{ steps.changed-files.added_modified }}' | jq -c '[.[] | match("(.*aws?)\/(.*)\/").captures[1].string] | unique | select(length > 0)'`
-          echo "MODULES=$MODULES" >> $GITHUB_ENV
-
-      - name: Get touched Terragrunt configurations
-        run: |
-          CONFIGS=`echo '${{ steps.changed-files.added_modified }}' | jq -c '[.[] | match("(.*terragrunt?)\/(.*)\/").captures[1].string] | unique | select(length > 0)'`
-          echo "CONFIGS=$CONFIGS" >> $GITHUB_ENV
-
       - name: Plan aws/acm
-        if: contains(env.MODULES, 'acm') || contains(env.CONFIGS, 'acm')
         run: |
           cd env/acm
           ../../bin/terragrunt plan --terragrunt-non-interactive
