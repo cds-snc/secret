@@ -18,4 +18,4 @@ resource "aws_dynamodb_table" "dynamodb-table" {
     Name       = var.product_name
     CostCenter = "${var.product_name}-${var.env}"
   }
-}
+} 
