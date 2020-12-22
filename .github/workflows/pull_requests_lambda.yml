@@ -1,0 +1,35 @@
+name: "CI Lambda"
+
+on:
+  pull_request:
+    paths:
+      - "secret/**"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  python-tests:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.6'
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Run tests
+        run: |
+          make install
+          make test
