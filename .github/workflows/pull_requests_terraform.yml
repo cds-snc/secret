@@ -49,6 +49,7 @@ jobs:
       - name: Get touched Terragrunt modules
         run: |
           MODULES=`echo '${{ steps.changed-files.all }}' | jq -c '[.[] | match("(.*aws?)\/(.*)\/").captures[1].string] | unique | select(length > 0)'`
+          echo $MODULES
           echo "MODULES=$MODULES" >> $GITHUB_ENV
 
       - name: Get touched Terragrunt configurations
@@ -63,19 +64,19 @@ jobs:
           ../../bin/terragrunt plan --terragrunt-non-interactive
 
       - name: Install python if needed
-        if: contains(env.MODULES, 'lambda')
+        if: contains(env.MODULES, 'lambda') || contains(env.CONFIGS, 'lambda')
         uses: actions/setup-python@v1
         with:
           python-version: '3.6'
 
       - name: Build lambda if needed
-        if: contains(env.MODULES, 'lambda')
+        if: contains(env.MODULES, 'lambda') || contains(env.CONFIGS, 'lambda')
         run: |
           make install
           make package
 
       - name: Plan aws/lambda
-        if: contains(env.MODULES, 'lambda')
+        if: contains(env.MODULES, 'lambda') || contains(env.CONFIGS, 'lambda')
         run: |
           cd terragrunt/lambda
           ../../bin/terragrunt plan --terragrunt-non-interactive

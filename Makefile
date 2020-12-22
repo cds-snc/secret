@@ -37,4 +37,4 @@ server:
 	chalice local
 
 test:
-	py.test -s secret/tests
+	pytest -s secret/tests
