@@ -63,20 +63,17 @@ jobs:
           ../../bin/terragrunt plan --terragrunt-non-interactive
 
       - name: Install python if needed
-        if: contains(env.MODULES, 'lambda') || contains(env.CONFIGS, 'lambda')
         uses: actions/setup-python@v2
         with:
           python-version: '3.8'
 
       - name: Build lambda if needed
-        if: contains(env.MODULES, 'lambda') || contains(env.CONFIGS, 'lambda')
         run: |
           python -m pip install --upgrade pip
           make install
           make package
 
       - name: Plan aws/lambda
-        if: contains(env.MODULES, 'lambda') || contains(env.CONFIGS, 'lambda')
         run: |
           cd terragrunt/lambda
           ../../bin/terragrunt plan --terragrunt-non-interactive
