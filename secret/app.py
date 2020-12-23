@@ -13,9 +13,10 @@ from pathlib import Path
 from uuid import uuid4
 
 app = Chalice(app_name="secret")
-tracer = Tracer()
 
-app.register_middleware(ConvertToMiddleware(tracer.capture_lambda_handler))
+if environ.get("ENV") == "PRODUCTION":
+    tracer = Tracer()
+    app.register_middleware(ConvertToMiddleware(tracer.capture_lambda_handler))
 
 _DYNAMO_CLIENT = None
 _KMS_CLIENT = None
