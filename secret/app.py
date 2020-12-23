@@ -3,14 +3,19 @@ import gettext
 import jinja2
 import time
 
+from aws_lambda_powertools import Tracer
 from base64 import b64encode
 from chalice import BadRequestError, Chalice, NotFoundError, Response
+from chalice.app import ConvertToMiddleware
 from cryptography.fernet import Fernet
 from os import environ
 from pathlib import Path
 from uuid import uuid4
 
 app = Chalice(app_name="secret")
+tracer = Tracer()
+
+app.register_middleware(ConvertToMiddleware(tracer.capture_lambda_handler))
 
 _DYNAMO_CLIENT = None
 _KMS_CLIENT = None
@@ -139,7 +144,9 @@ def ping():
 @app.route("/{lang}/view/{id}")
 def view(lang, id):
 
-    template = render("view.html", {"lang": lang, "url_stub": "/view/" + id, "viewId": id})
+    template = render(
+        "view.html", {"lang": lang, "url_stub": "/view/" + id, "viewId": id}
+    )
     return Response(
         template,
         status_code=200,
