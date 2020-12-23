@@ -226,7 +226,10 @@ def test_encrypt_with_ttl_more_than_max_age(test_client, dynamo_stub, kms_stub):
 def test_encrypt_with_body_more_than_max_length(test_client, dynamo_stub, kms_stub):
     epoch = int(time.time())
     payload = json.dumps(
-        {"body": "0" * (app.MAX_SECRET_LENGTH + 1), "ttl": epoch + (86_400 * app.MAX_AGE_IN_DAYS)}
+        {
+            "body": "0" * (app.MAX_SECRET_LENGTH + 1),
+            "ttl": epoch + (86_400 * app.MAX_AGE_IN_DAYS),
+        }
     )
     result = test_client.http.post(
         "/encrypt", body=payload, headers={"Content-Type": "application/json"}
@@ -262,7 +265,9 @@ def test_returns_an_id(test_client, dynamo_stub, kms_stub, crypto_stub):
     )
 
     epoch = int(time.time())
-    payload = json.dumps({"body": "abcd", "ttl": epoch + (86_400 * app.MAX_AGE_IN_DAYS)})
+    payload = json.dumps(
+        {"body": "abcd", "ttl": epoch + (86_400 * app.MAX_AGE_IN_DAYS)}
+    )
     result = test_client.http.post(
         "/encrypt", body=payload, headers={"Content-Type": "application/json"}
     )

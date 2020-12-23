@@ -110,6 +110,19 @@ resource "aws_iam_role_policy" "lambda-iam-role-policy" {
             "dynamodb:DeleteItem"
          ],
          "Resource":"${aws_dynamodb_table.dynamodb-table.arn}"
+      },
+      {
+         "Effect":"Allow",
+         "Action":[
+            "xray:PutTraceSegments",
+            "xray:PutTelemetryRecords",
+            "xray:GetSamplingRules",
+            "xray:GetSamplingTargets",
+            "xray:GetSamplingStatisticSummaries"
+         ],
+         "Resource":[
+            "*"
+         ]
       }
    ]
 }
@@ -128,8 +141,10 @@ resource "aws_lambda_function" "api_handler" {
 
   environment {
     variables = {
-      DYNAMO_TABLE = aws_dynamodb_table.dynamodb-table.name
-      KMS_ID       = aws_kms_key.key.id
+      DYNAMO_TABLE            = aws_dynamodb_table.dynamodb-table.name
+      ENV                     = "PRODUCTION"
+      KMS_ID                  = aws_kms_key.key.id
+      POWERTOOLS_SERVICE_NAME = "secret"
     }
   }
 
