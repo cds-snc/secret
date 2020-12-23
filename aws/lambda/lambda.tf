@@ -139,6 +139,10 @@ resource "aws_lambda_function" "api_handler" {
   source_code_hash = filebase64sha256("${path.module}/deployment.zip")
   timeout          = 60
 
+  tracing_config {
+    mode = "Active"
+  }
+
   environment {
     variables = {
       DYNAMO_TABLE            = aws_dynamodb_table.dynamodb-table.name
