@@ -116,9 +116,6 @@ resource "aws_iam_role_policy" "lambda-iam-role-policy" {
          "Action":[
             "xray:PutTraceSegments",
             "xray:PutTelemetryRecords",
-            "xray:GetSamplingRules",
-            "xray:GetSamplingTargets",
-            "xray:GetSamplingStatisticSummaries"
          ],
          "Resource":[
             "*"
