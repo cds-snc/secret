@@ -1,5 +1,6 @@
 import app
 import json
+import re
 import time
 
 from base64 import b64encode
@@ -276,3 +277,51 @@ def test_returns_an_id(test_client, dynamo_stub, kms_stub, crypto_stub):
 
     dynamo_stub.assert_no_pending_responses()
     kms_stub.assert_no_pending_responses()
+
+@mark.slack
+def test_returns_an_id_to_slack(test_client, dynamo_stub, kms_stub, crypto_stub):
+
+    kms_stub.add_response(
+        "generate_data_key",
+        expected_params={
+            "KeyId": environ["KMS_ID"],
+            "KeySpec": "AES_256",
+        },
+        service_response={
+            "CiphertextBlob": crypto_stub["CiphertextBlob"],
+            "Plaintext": crypto_stub["Plaintext"],
+        },
+    )
+
+    dynamo_stub.add_response(
+        "put_item",
+        expected_params={
+            "Item": ANY,
+            "TableName": environ["DYNAMO_TABLE"],
+        },
+        service_response={"ConsumedCapacity": {"TableName": "abcd"}},
+    )
+
+    payload = "text=foo"
+    result = test_client.http.post(
+        "/slack", body=payload, headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    assert "response_type" in result.json_body
+    assert result.json_body["response_type"] == "ephemeral"
+
+    assert "blocks" in result.json_body
+    assert re.search('view\\/.{36}$', result.json_body["blocks"][0]["text"]["text"])
+
+    dynamo_stub.assert_no_pending_responses()
+    kms_stub.assert_no_pending_responses()
+
+def test_returns_an_error_to_slack(test_client):
+    payload = ""
+    result = test_client.http.post(
+        "/slack", body=payload, headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    assert "response_type" in result.json_body
+    assert result.json_body["response_type"] == "ephemeral"
+
+    assert "text" in result.json_body
+    assert result.json_body["text"] == "Sorry, an error occured generating your secret."
