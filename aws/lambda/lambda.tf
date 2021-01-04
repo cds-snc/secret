@@ -115,7 +115,7 @@ resource "aws_iam_role_policy" "lambda-iam-role-policy" {
          "Effect":"Allow",
          "Action":[
             "xray:PutTraceSegments",
-            "xray:PutTelemetryRecords",
+            "xray:PutTelemetryRecords"
          ],
          "Resource":[
             "*"
