@@ -44,6 +44,14 @@ resource "aws_api_gateway_rest_api" "rest-api" {
   }
 }
 
+resource "aws_api_gateway_stage" "api" {
+  stage_name           = "api"
+  description          = md5(data.template_file.chalice_api_swagger.rendered)
+  rest_api_id          = aws_api_gateway_rest_api.rest-api.id
+  deployment_id        = aws_api_gateway_deployment.rest-api.id
+  xray_tracing_enabled = true
+}
+
 resource "aws_api_gateway_domain_name" "rest-api" {
   certificate_arn = var.domain_cert_arn
   domain_name     = var.domain
