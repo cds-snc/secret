@@ -13,7 +13,7 @@ resource "aws_api_gateway_deployment" "rest-api" {
 
   rest_api_id       = aws_api_gateway_rest_api.rest-api.id
   stage_description = md5(data.template_file.chalice_api_swagger.rendered)
-  stage_name        = "api"
+  stage_name        = "prod"
 }
 
 resource "aws_api_gateway_rest_api" "rest-api" {
@@ -45,7 +45,7 @@ resource "aws_api_gateway_rest_api" "rest-api" {
 }
 
 resource "aws_api_gateway_stage" "api" {
-  stage_name           = "api"
+  stage_name           = "prod"
   description          = md5(data.template_file.chalice_api_swagger.rendered)
   rest_api_id          = aws_api_gateway_rest_api.rest-api.id
   deployment_id        = aws_api_gateway_deployment.rest-api.id
