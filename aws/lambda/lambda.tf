@@ -45,9 +45,10 @@ resource "aws_api_gateway_rest_api" "rest-api" {
 }
 
 resource "aws_api_gateway_stage" "rest-api" {
-  stage_name    = "prod"
-  rest_api_id   = aws_api_gateway_rest_api.rest-api.id
-  deployment_id = aws_api_gateway_deployment.rest-api.id
+  stage_name           = "prod"
+  rest_api_id          = aws_api_gateway_rest_api.rest-api.id
+  deployment_id        = aws_api_gateway_deployment.rest-api.id
+  xray_tracing_enabled = true
 }
 
 resource "aws_api_gateway_domain_name" "rest-api" {
