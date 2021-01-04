@@ -13,7 +13,7 @@ resource "aws_api_gateway_deployment" "rest-api" {
 
   rest_api_id       = aws_api_gateway_rest_api.rest-api.id
   stage_description = md5(data.template_file.chalice_api_swagger.rendered)
-  stage_name        = "api"
+  stage_name        = "dev"
 }
 
 resource "aws_api_gateway_rest_api" "rest-api" {
@@ -44,6 +44,12 @@ resource "aws_api_gateway_rest_api" "rest-api" {
   }
 }
 
+resource "aws_api_gateway_stage" "rest-api" {
+  stage_name    = "prod"
+  rest_api_id   = aws_api_gateway_rest_api.rest-api.id
+  deployment_id = aws_api_gateway_deployment.rest-api.id
+}
+
 resource "aws_api_gateway_domain_name" "rest-api" {
   certificate_arn = var.domain_cert_arn
   domain_name     = var.domain
@@ -51,7 +57,7 @@ resource "aws_api_gateway_domain_name" "rest-api" {
 
 resource "aws_api_gateway_base_path_mapping" "rest-api" {
   api_id      = aws_api_gateway_rest_api.rest-api.id
-  stage_name  = aws_api_gateway_deployment.rest-api.stage_name
+  stage_name  = aws_api_gateway_stage.rest-api.stage_name
   domain_name = aws_api_gateway_domain_name.rest-api.domain_name
 }
 
