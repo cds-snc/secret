@@ -1,0 +1,174 @@
+{
+  "resource": {
+    "aws_iam_role": {
+      "default-role": {
+        "name": "secret-prod",
+        "assume_role_policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Sid\": \"\", \"Effect\": \"Allow\", \"Principal\": {\"Service\": \"lambda.amazonaws.com\"}, \"Action\": \"sts:AssumeRole\"}]}"
+      }
+    },
+    "aws_iam_role_policy": {
+      "default-role": {
+        "name": "default-rolePolicy",
+        "policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Action\": [\"logs:CreateLogGroup\", \"logs:CreateLogStream\", \"logs:PutLogEvents\"], \"Resource\": \"arn:*:logs:*:*:*\"}, {\"Effect\": \"Allow\", \"Action\": [\"xray:PutTraceSegments\", \"xray:PutTelemetryRecords\"], \"Resource\": \"*\"}]}",
+        "role": "${aws_iam_role.default-role.id}"
+      }
+    },
+    "aws_lambda_function": {
+      "wake": {
+        "function_name": "secret-prod-wake",
+        "runtime": "python3.8",
+        "handler": "app.wake",
+        "memory_size": 128,
+        "tags": {
+          "aws-chalice": "version=1.21.6:stage=prod:app=secret"
+        },
+        "timeout": 60,
+        "source_code_hash": "${filebase64sha256(\"${path.module}/deployment.zip\")}",
+        "filename": "${path.module}/deployment.zip",
+        "environment": {
+          "variables": {
+            "POWERTOOLS_SERVICE_NAME": "secret"
+          }
+        },
+        "tracing_config": {
+          "mode": "Active"
+        },
+        "role": "${aws_iam_role.default-role.arn}"
+      },
+      "api_handler": {
+        "function_name": "secret-prod",
+        "runtime": "python3.8",
+        "handler": "app.app",
+        "memory_size": 128,
+        "tags": {
+          "aws-chalice": "version=1.21.6:stage=prod:app=secret"
+        },
+        "timeout": 60,
+        "source_code_hash": "${filebase64sha256(\"${path.module}/deployment.zip\")}",
+        "filename": "${path.module}/deployment.zip",
+        "environment": {
+          "variables": {
+            "POWERTOOLS_SERVICE_NAME": "secret"
+          }
+        },
+        "tracing_config": {
+          "mode": "Active"
+        },
+        "role": "${aws_iam_role.default-role.arn}"
+      }
+    },
+    "aws_cloudwatch_event_rule": {
+      "wake-event": {
+        "name": "wake-event",
+        "schedule_expression": "rate(5 minutes)",
+        "description": ""
+      }
+    },
+    "aws_cloudwatch_event_target": {
+      "wake-event": {
+        "rule": "${aws_cloudwatch_event_rule.wake-event.name}",
+        "target_id": "wake-event",
+        "arn": "${aws_lambda_function.wake.arn}"
+      }
+    },
+    "aws_lambda_permission": {
+      "wake-event": {
+        "function_name": "secret-prod-wake",
+        "action": "lambda:InvokeFunction",
+        "principal": "events.amazonaws.com",
+        "source_arn": "${aws_cloudwatch_event_rule.wake-event.arn}"
+      },
+      "rest_api_invoke": {
+        "function_name": "secret-prod",
+        "action": "lambda:InvokeFunction",
+        "principal": "apigateway.amazonaws.com",
+        "source_arn": "${aws_api_gateway_rest_api.rest_api.execution_arn}/*"
+      }
+    },
+    "aws_api_gateway_rest_api": {
+      "rest_api": {
+        "body": "${data.template_file.chalice_api_swagger.rendered}",
+        "name": "secret",
+        "binary_media_types": [
+          "application/octet-stream",
+          "application/x-tar",
+          "application/zip",
+          "audio/basic",
+          "audio/ogg",
+          "audio/mp4",
+          "audio/mpeg",
+          "audio/wav",
+          "audio/webm",
+          "image/png",
+          "image/jpg",
+          "image/jpeg",
+          "image/gif",
+          "video/ogg",
+          "video/mpeg",
+          "video/webm"
+        ],
+        "endpoint_configuration": {
+          "types": [
+            "EDGE"
+          ]
+        }
+      }
+    },
+    "aws_api_gateway_deployment": {
+      "rest_api": {
+        "stage_name": "api",
+        "stage_description": "${md5(data.template_file.chalice_api_swagger.rendered)}",
+        "rest_api_id": "${aws_api_gateway_rest_api.rest_api.id}",
+        "lifecycle": {
+          "create_before_destroy": true
+        }
+      }
+    }
+  },
+  "terraform": {
+    "required_version": "> 0.11.0, < 0.14.0"
+  },
+  "provider": {
+    "template": {
+      "version": "~> 2"
+    },
+    "aws": {
+      "version": ">= 2, < 4"
+    },
+    "null": {
+      "version": "~> 2"
+    }
+  },
+  "data": {
+    "aws_caller_identity": {
+      "chalice": {}
+    },
+    "aws_partition": {
+      "chalice": {}
+    },
+    "aws_region": {
+      "chalice": {}
+    },
+    "null_data_source": {
+      "chalice": {
+        "inputs": {
+          "app": "secret",
+          "stage": "prod"
+        }
+      }
+    },
+    "template_file": {
+      "chalice_api_swagger": {
+        "template": "{\"swagger\": \"2.0\", \"info\": {\"version\": \"1.0\", \"title\": \"secret\"}, \"schemes\": [\"https\"], \"paths\": {\"/\": {\"get\": {\"consumes\": [\"application/json\"], \"produces\": [\"application/json\"], \"responses\": {\"200\": {\"description\": \"200 response\", \"schema\": {\"$ref\": \"#/definitions/Empty\"}}}, \"x-amazon-apigateway-integration\": {\"responses\": {\"default\": {\"statusCode\": \"200\"}}, \"uri\": \"${aws_lambda_function.api_handler.invoke_arn}\", \"passthroughBehavior\": \"when_no_match\", \"httpMethod\": \"POST\", \"contentHandling\": \"CONVERT_TO_TEXT\", \"type\": \"aws_proxy\"}}}, \"/{lang}\": {\"get\": {\"consumes\": [\"application/json\"], \"produces\": [\"application/json\"], \"responses\": {\"200\": {\"description\": \"200 response\", \"schema\": {\"$ref\": \"#/definitions/Empty\"}}}, \"x-amazon-apigateway-integration\": {\"responses\": {\"default\": {\"statusCode\": \"200\"}}, \"uri\": \"${aws_lambda_function.api_handler.invoke_arn}\", \"passthroughBehavior\": \"when_no_match\", \"httpMethod\": \"POST\", \"contentHandling\": \"CONVERT_TO_TEXT\", \"type\": \"aws_proxy\"}, \"parameters\": [{\"name\": \"lang\", \"in\": \"path\", \"required\": true, \"type\": \"string\"}]}}, \"/decrypt/{id}\": {\"get\": {\"consumes\": [\"application/json\"], \"produces\": [\"application/json\"], \"responses\": {\"200\": {\"description\": \"200 response\", \"schema\": {\"$ref\": \"#/definitions/Empty\"}}}, \"x-amazon-apigateway-integration\": {\"responses\": {\"default\": {\"statusCode\": \"200\"}}, \"uri\": \"${aws_lambda_function.api_handler.invoke_arn}\", \"passthroughBehavior\": \"when_no_match\", \"httpMethod\": \"POST\", \"contentHandling\": \"CONVERT_TO_TEXT\", \"type\": \"aws_proxy\"}, \"parameters\": [{\"name\": \"id\", \"in\": \"path\", \"required\": true, \"type\": \"string\"}]}}, \"/delete/{id}\": {\"delete\": {\"consumes\": [\"application/json\"], \"produces\": [\"application/json\"], \"responses\": {\"200\": {\"description\": \"200 response\", \"schema\": {\"$ref\": \"#/definitions/Empty\"}}}, \"x-amazon-apigateway-integration\": {\"responses\": {\"default\": {\"statusCode\": \"200\"}}, \"uri\": \"${aws_lambda_function.api_handler.invoke_arn}\", \"passthroughBehavior\": \"when_no_match\", \"httpMethod\": \"POST\", \"contentHandling\": \"CONVERT_TO_TEXT\", \"type\": \"aws_proxy\"}, \"parameters\": [{\"name\": \"id\", \"in\": \"path\", \"required\": true, \"type\": \"string\"}]}}, \"/encrypt\": {\"post\": {\"consumes\": [\"application/json\"], \"produces\": [\"application/json\"], \"responses\": {\"200\": {\"description\": \"200 response\", \"schema\": {\"$ref\": \"#/definitions/Empty\"}}}, \"x-amazon-apigateway-integration\": {\"responses\": {\"default\": {\"statusCode\": \"200\"}}, \"uri\": \"${aws_lambda_function.api_handler.invoke_arn}\", \"passthroughBehavior\": \"when_no_match\", \"httpMethod\": \"POST\", \"contentHandling\": \"CONVERT_TO_TEXT\", \"type\": \"aws_proxy\"}}}, \"/ping\": {\"get\": {\"consumes\": [\"application/json\"], \"produces\": [\"application/json\"], \"responses\": {\"200\": {\"description\": \"200 response\", \"schema\": {\"$ref\": \"#/definitions/Empty\"}}}, \"x-amazon-apigateway-integration\": {\"responses\": {\"default\": {\"statusCode\": \"200\"}}, \"uri\": \"${aws_lambda_function.api_handler.invoke_arn}\", \"passthroughBehavior\": \"when_no_match\", \"httpMethod\": \"POST\", \"contentHandling\": \"CONVERT_TO_TEXT\", \"type\": \"aws_proxy\"}}}, \"/slack\": {\"post\": {\"consumes\": [\"application/x-www-form-urlencoded\"], \"produces\": [\"application/json\"], \"responses\": {\"200\": {\"description\": \"200 response\", \"schema\": {\"$ref\": \"#/definitions/Empty\"}}}, \"x-amazon-apigateway-integration\": {\"responses\": {\"default\": {\"statusCode\": \"200\"}}, \"uri\": \"${aws_lambda_function.api_handler.invoke_arn}\", \"passthroughBehavior\": \"when_no_match\", \"httpMethod\": \"POST\", \"contentHandling\": \"CONVERT_TO_TEXT\", \"type\": \"aws_proxy\"}}}, \"/{lang}/view/{id}\": {\"get\": {\"consumes\": [\"application/json\"], \"produces\": [\"application/json\"], \"responses\": {\"200\": {\"description\": \"200 response\", \"schema\": {\"$ref\": \"#/definitions/Empty\"}}}, \"x-amazon-apigateway-integration\": {\"responses\": {\"default\": {\"statusCode\": \"200\"}}, \"uri\": \"${aws_lambda_function.api_handler.invoke_arn}\", \"passthroughBehavior\": \"when_no_match\", \"httpMethod\": \"POST\", \"contentHandling\": \"CONVERT_TO_TEXT\", \"type\": \"aws_proxy\"}, \"parameters\": [{\"name\": \"lang\", \"in\": \"path\", \"required\": true, \"type\": \"string\"}, {\"name\": \"id\", \"in\": \"path\", \"required\": true, \"type\": \"string\"}]}}}, \"definitions\": {\"Empty\": {\"type\": \"object\", \"title\": \"Empty Schema\"}}, \"x-amazon-apigateway-binary-media-types\": [\"application/octet-stream\", \"application/x-tar\", \"application/zip\", \"audio/basic\", \"audio/ogg\", \"audio/mp4\", \"audio/mpeg\", \"audio/wav\", \"audio/webm\", \"image/png\", \"image/jpg\", \"image/jpeg\", \"image/gif\", \"video/ogg\", \"video/mpeg\", \"video/webm\"]}"
+      }
+    }
+  },
+  "output": {
+    "EndpointURL": {
+      "value": "${aws_api_gateway_deployment.rest_api.invoke_url}"
+    },
+    "RestAPIId": {
+      "value": "${aws_api_gateway_rest_api.rest_api.id}"
+    }
+  }
+}

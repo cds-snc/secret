@@ -163,8 +163,8 @@ def view(lang, id):
     )
 
 
-@app.on_cw_event({"source": ["aws.events"]})
-def on_event(event):
+@app.schedule('rate(5 minutes)')
+def wake(event):
     print(event.to_dict())
     pass
 
