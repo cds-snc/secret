@@ -163,12 +163,6 @@ def view(lang, id):
     )
 
 
-@app.schedule('rate(5 minutes)')
-def wake(event):
-    print(event.to_dict())
-    pass
-
-
 def encrypt_and_save(body, ttl):
     id = str(uuid4())
 
