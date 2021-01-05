@@ -179,7 +179,11 @@ resource "aws_cloudwatch_event_target" "tigger-lambda-every-five-minutes" {
   rule      = aws_cloudwatch_event_rule.every-five-minutes.name
   target_id = "lambda"
   arn       = aws_lambda_function.api_handler.arn
-  input     = "{'foo': 'bar'}"
+  input     = <<EOF
+{
+  "foo": "bar"
+}
+EOF
 }
 
 resource "aws_lambda_permission" "allow-cloudwatch-to-call-lambda" {
