@@ -1,11 +1,11 @@
 data "archive_file" "lambda-warmer" {
   type        = "zip"
   source_file = "${path.module}/src/lambda-warmer.py"
-  output_path = "/tmp/lambda-warmer.py.zip"
+  output_path = "/tmp/lambda-warmer.zip"
 }
 
 resource "aws_lambda_function" "lambda-warmer" {
-  filename         = "/tmp/lambda-prewarm.py.zip"
+  filename         = data.archive_file.lambda-warmer.output_path
   function_name    = "${var.product_name}-${var.env}-lambda-warmer"
   handler          = "main.handler"
   memory_size      = 128
