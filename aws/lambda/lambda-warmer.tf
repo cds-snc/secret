@@ -1,6 +1,6 @@
 data "archive_file" "lambda-warmer" {
   type        = "zip"
-  source_file = "src/lambda-warmer.py"
+  source_file = "${path.module}/src/lambda-warmer.py"
   output_path = "/tmp/lambda-warmer.py.zip"
 }
 
