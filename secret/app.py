@@ -163,6 +163,12 @@ def view(lang, id):
     )
 
 
+@app.on_cw_event({"source": ["aws.events"]})
+def on_event(event):
+    print(event.to_dict())
+    pass
+
+
 def encrypt_and_save(body, ttl):
     id = str(uuid4())
 
