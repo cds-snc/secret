@@ -7,7 +7,7 @@ data "archive_file" "lambda-warmer" {
 resource "aws_lambda_function" "lambda-warmer" {
   filename         = data.archive_file.lambda-warmer.output_path
   function_name    = "${var.product_name}-${var.env}-lambda-warmer"
-  handler          = "main.handler"
+  handler          = "lambda-warmer.handler"
   memory_size      = 128
   role             = aws_iam_role.lambda-iam-role.arn
   runtime          = "python3.8"
