@@ -168,23 +168,3 @@ resource "aws_lambda_permission" "rest-api-invoke" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.rest-api.execution_arn}/*"
 }
-
-resource "aws_cloudwatch_event_rule" "every-five-minutes" {
-  name                = "every-five-minutes"
-  description         = "Fires every five minutes"
-  schedule_expression = "rate(5 minutes)"
-}
-
-resource "aws_cloudwatch_event_target" "tigger-lambda-every-five-minutes" {
-  rule      = aws_cloudwatch_event_rule.every-five-minutes.name
-  target_id = "lambda"
-  arn       = aws_lambda_function.api_handler.arn
-}
-
-resource "aws_lambda_permission" "allow-cloudwatch-to-call-lambda" {
-  statement_id  = "AllowExecutionFromCloudWatch"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.api_handler.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.every-five-minutes.arn
-}
