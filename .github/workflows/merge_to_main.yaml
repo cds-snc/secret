@@ -8,7 +8,7 @@ on:
       - "aws/**"
       - "secret/**"
       - "terragrunt/**"
-      - ".github/workflows/*"
+      - ".github/workflows/**"
 
 defaults:
   run:

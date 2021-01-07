@@ -5,7 +5,7 @@ on:
     paths:
       - "aws/**"
       - "terragrunt/**"
-      - ".github/workflows/*"
+      - ".github/workflows/**"
 
 defaults:
   run:

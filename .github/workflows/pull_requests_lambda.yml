@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "secret/**"
-      - ".github/workflows/*"
+      - ".github/workflows/**"
 
 defaults:
   run:
