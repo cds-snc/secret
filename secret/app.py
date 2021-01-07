@@ -204,4 +204,5 @@ def render(filename, context={}):
     )
     t.install()
     env.globals["_"] = t.gettext
+    context['git_sha'] = environ.get("GIT_SHA", "abcdefg")
     return env.get_template(filename).render(context)

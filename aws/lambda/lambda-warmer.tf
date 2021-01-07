@@ -16,7 +16,7 @@ resource "aws_lambda_function" "lambda-warmer" {
 
   environment {
     variables = {
-      BASE_URL = "https://secret.cdssandbox.xyz"
+      BASE_URL = "https://${var.domain}"
     }
   }
 

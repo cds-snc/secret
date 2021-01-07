@@ -151,6 +151,7 @@ resource "aws_lambda_function" "api_handler" {
     variables = {
       DYNAMO_TABLE            = aws_dynamodb_table.dynamodb-table.name
       ENV                     = "PRODUCTION"
+      GIT_SHA                 = var.git_sha
       KMS_ID                  = aws_kms_key.key.id
       POWERTOOLS_SERVICE_NAME = "secret"
     }
