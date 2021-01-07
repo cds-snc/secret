@@ -135,10 +135,14 @@ def slack():
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": "Share your secret with the following link: \n>https://secret.cdssandbox.xyz/en/view/"
-                        + encrypt_and_save(
-                            data["text"][0], int(time.time()) + 60 * 1000
-                        ) + " \n Note: your link is valid for the next 60 minutes",
+                        "text": "Share your secret with the following link: \n>https://%s/en/view/%s \n Note: your link is valid for the next 60 minutes"
+                        % (
+                            app.current_request.headers["host"],
+                            encrypt_and_save(
+                                data["text"][0],
+                                int(time.time()) + 60 * 1000,
+                            ),
+                        ),
                     },
                 }
             ],

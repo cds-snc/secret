@@ -307,13 +307,16 @@ def test_returns_an_id_to_slack(test_client, dynamo_stub, kms_stub, crypto_stub)
     result = test_client.http.post(
         "/slack",
         body=payload,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "host": "abcd.com",
+        },
     )
     assert "response_type" in result.json_body
     assert result.json_body["response_type"] == "ephemeral"
 
     assert "blocks" in result.json_body
-    assert re.search("view\\/.{36}$", result.json_body["blocks"][0]["text"]["text"])
+    assert re.search("view\\/.{36}\\s", result.json_body["blocks"][0]["text"]["text"])
 
     dynamo_stub.assert_no_pending_responses()
     kms_stub.assert_no_pending_responses()
@@ -324,7 +327,10 @@ def test_returns_an_error_to_slack(test_client):
     result = test_client.http.post(
         "/slack",
         body=payload,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "host": "abcd.com",
+        },
     )
     assert "response_type" in result.json_body
     assert result.json_body["response_type"] == "ephemeral"
