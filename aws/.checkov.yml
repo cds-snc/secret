@@ -1,0 +1,15 @@
+# Config for checkov Terraform static analysis
+
+skip-check:
+  - CKV_AWS_28  # DynamoDB point-in-time recovery not required (data is ephemeral)
+  - CKV_AWS_115 # Lambda concurrent execution limit not required
+  - CKV_AWS_116 # Lambda DLQ not required
+  - CKV_AWS_117 # Lambda does not need to be in a VPC
+  - CKV_AWS_119 # DynamoDB default service key encryption is acceptable
+  - CKV_AWS_120 # API caching is not wanted
+  - CKV_AWS_173 # Lambda environment variable encryption with default KMS key is acceptable  
+  - CKV2_AWS_16 # DynamoDB auto scaling not required
+  - CKV_AWS_50  # TODO: enable Lambda x-ray tracing "PassThrough"
+  - CKV_AWS_76  # TODO: enable API gateway access logging
+  - CKV2_AWS_4  # TODO: set API gateway stage logging level
+  - CKV2_AWS_29 # TODO: add WAF
