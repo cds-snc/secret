@@ -15,6 +15,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: ca-central-1
+  CONFTEST_VERSION: 0.27.0
   TERRAFORM_VERSION: 0.13.5
   TERRAGRUNT_VERSION: v0.26.0
   TF_VAR_git_sha: abcdefgh
@@ -39,12 +40,25 @@ jobs:
           mkdir bin
           wget -O bin/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/$TERRAGRUNT_VERSION/terragrunt_linux_amd64
           chmod +x bin/terragrunt
-          echo "bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+
+      - name: Setup Conftest
+        run: |
+          wget "https://github.com/open-policy-agent/conftest/releases/download/v${{ env.CONFTEST_VERSION }}/conftest_${{ env.CONFTEST_VERSION }}_Linux_x86_64.tar.gz" \
+          && wget "https://github.com/open-policy-agent/conftest/releases/download/v${{ env.CONFTEST_VERSION }}/checksums.txt" \
+          && grep 'Linux_x86_64.tar.gz' < checksums.txt | sha256sum --check  --status \
+          && tar -zxvf "conftest_${{ env.CONFTEST_VERSION }}_Linux_x86_64.tar.gz" conftest \
+          && mv conftest /usr/local/bin \
+          && rm "conftest_${{ env.CONFTEST_VERSION }}_Linux_x86_64.tar.gz" checksums.txt
 
       - name: Plan aws/acm
-        run: |
-          cd terragrunt/acm
-          ../../bin/terragrunt plan --terragrunt-non-interactive
+        uses: cds-snc/terraform-plan@v2
+        with:
+          comment-delete: true
+          comment-title: Plan for aws/acm
+          directory: ./terragrunt/acm
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          terragrunt: true
 
       - name: Install python if needed
         uses: actions/setup-python@v2
@@ -60,6 +74,10 @@ jobs:
           make package
 
       - name: Plan aws/lambda
-        run: |
-          cd terragrunt/lambda
-          ../../bin/terragrunt plan --terragrunt-non-interactive
+        uses: cds-snc/terraform-plan@v2
+        with:
+          comment-delete: true
+          comment-title: Plan for aws/lambda
+          directory: ./terragrunt/lambda
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          terragrunt: true
