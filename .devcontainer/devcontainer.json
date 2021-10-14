@@ -10,7 +10,9 @@
 			"VARIANT": "3.8",
 			// Options
 			"INSTALL_NODE": "true",
-			"NODE_VERSION": "lts/*"
+			"NODE_VERSION": "lts/*",
+			"TERRAFORM_VERSION": "0.13.5",
+			"TERRAGRUNT_VERSION": "0.26.0",
 		}
 	},
 
