@@ -1,6 +1,6 @@
 locals {
   account_id   = "637287734259"
-  domain       = "secret.cdssandbox.xyz"
+  domain       = "encrypted-message.cdssandbox.xyz"
   env          = "production"
   product_name = "secret"
 }
