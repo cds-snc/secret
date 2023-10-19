@@ -1,3 +1,10 @@
+locals {
+  stage_names = [
+    aws_api_gateway_deployment.rest-api.stage_name, # dev
+    aws_api_gateway_stage.rest-api.stage_name       # prod
+  ]
+}
+
 data "template_file" "chalice_api_swagger" {
   template = file("${path.module}/swagger.json")
 
@@ -60,6 +67,19 @@ resource "aws_api_gateway_base_path_mapping" "rest-api" {
   api_id      = aws_api_gateway_rest_api.rest-api.id
   stage_name  = aws_api_gateway_stage.rest-api.stage_name
   domain_name = aws_api_gateway_domain_name.rest-api.domain_name
+}
+
+resource "aws_api_gateway_method_settings" "settings" {
+  for_each = toset(local.stage_names)
+
+  rest_api_id = aws_api_gateway_rest_api.rest-api.id
+  stage_name  = each.value
+  method_path = "*/*"
+
+  settings {
+    metrics_enabled = true
+    logging_level   = "ERROR"
+  }
 }
 
 resource "aws_iam_role" "lambda-iam-role" {
