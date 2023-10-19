@@ -14,6 +14,7 @@ resource "aws_acm_certificate" "domain" {
   }
 
   tags = {
-    CostCenter = "${var.product_name}-${var.env}"
+    CostCentre = "${var.product_name}-${var.env}"
+    Terraform  = true
   }
 }
