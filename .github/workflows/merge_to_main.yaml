@@ -19,7 +19,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: ca-central-1
   TERRAFORM_VERSION: 0.13.5
-  TERRAGRUNT_VERSION: v0.26.0
+  TERRAGRUNT_VERSION: 0.26.0
   TF_VAR_git_sha: ${{ github.sha }}
 
 jobs:
@@ -30,23 +30,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@ed3a0531877aca392eb870f440d9ae7aba83a6bd # v1.4.0
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-          terraform_wrapper: false
-
-      - name: Setup Terragrunt
-        run: |
-          mkdir bin
-          wget -O bin/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/$TERRAGRUNT_VERSION/terragrunt_linux_amd64
-          chmod +x bin/terragrunt
-          echo "bin" >> $GITHUB_PATH
+      - name: Setup Terraform tools
+        uses: cds-snc/terraform-tools-setup@v1
 
       - name: Apply aws/acm
-        run: |
-          cd terragrunt/acm
-          ../../bin/terragrunt apply --terragrunt-non-interactive -auto-approve
+        working-directory: terragrunt/acm
+        run: terragrunt apply --terragrunt-non-interactive -auto-approve
 
       - name: Install python if needed
         uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2.3.4
@@ -62,6 +51,5 @@ jobs:
           make package
 
       - name: Apply aws/lambda
-        run: |
-          cd terragrunt/lambda
-          ../../bin/terragrunt apply --terragrunt-non-interactive -auto-approve
+        working-directory: terragrunt/lambda
+        run: terragrunt apply --terragrunt-non-interactive -auto-approve
