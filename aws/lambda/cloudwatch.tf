@@ -2,6 +2,7 @@
 # API Gateway CloudWatch logging
 #
 resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
+  # checkov:skip=CKV_AWS_158:CloudWatch default service key encryption is acceptable
   name              = "api_gateway_log_group"
   retention_in_days = 7
 }
