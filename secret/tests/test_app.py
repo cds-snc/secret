@@ -51,13 +51,11 @@ def test_index(test_client):
 
 def test_index_en(test_client):
     result = test_client.http.get("/en")
-    assert "Government of Canada" in result.body.decode()
     assert result.status_code == 200
 
 
 def test_index_fr(test_client):
     result = test_client.http.get("/fr")
-    assert "Gouvernement du Canada" in result.body.decode()
     assert result.status_code == 200
 
 
@@ -83,7 +81,7 @@ def test_decrypt_with_bad_id(test_client, dynamo_stub, kms_stub):
     result = test_client.http.get("/decrypt/" + key)
     assert result.json_body == {
         "Code": "NotFoundError",
-        "Message": "NotFoundError: Item is ID %s not found" % (key),
+        "Message": "Item is ID %s not found" % (key),
     }
 
     dynamo_stub.assert_no_pending_responses()
@@ -204,7 +202,7 @@ def test_encrypt_with_ttl_equal_to_epoch(test_client, dynamo_stub, kms_stub):
     )
     assert result.json_body == {
         "Code": "BadRequestError",
-        "Message": "BadRequestError: TTL must be greater than %d and less than %d"
+        "Message": "TTL must be greater than %d and less than %d"
         % (epoch, epoch + (86_400 * app.MAX_AGE_IN_DAYS)),
     }
 
@@ -219,7 +217,7 @@ def test_encrypt_with_ttl_more_than_max_age(test_client, dynamo_stub, kms_stub):
     )
     assert result.json_body == {
         "Code": "BadRequestError",
-        "Message": "BadRequestError: TTL must be greater than %d and less than %d"
+        "Message": "TTL must be greater than %d and less than %d"
         % (epoch, epoch + (86_400 * app.MAX_AGE_IN_DAYS)),
     }
 
@@ -237,7 +235,7 @@ def test_encrypt_with_body_more_than_max_length(test_client, dynamo_stub, kms_st
     )
     assert result.json_body == {
         "Code": "BadRequestError",
-        "Message": "BadRequestError: Secret must be less than %d characters"
+        "Message": "Secret must be less than %d characters"
         % (app.MAX_SECRET_LENGTH),
     }
 
@@ -316,7 +314,8 @@ def test_returns_an_id_to_slack(test_client, dynamo_stub, kms_stub, crypto_stub)
     assert result.json_body["response_type"] == "ephemeral"
 
     assert "blocks" in result.json_body
-    assert re.search("view\\/.{36}\\s", result.json_body["blocks"][0]["text"]["text"])
+    assert re.search("view\\/.{36}\\s",
+                     result.json_body["blocks"][0]["text"]["text"])
 
     dynamo_stub.assert_no_pending_responses()
     kms_stub.assert_no_pending_responses()

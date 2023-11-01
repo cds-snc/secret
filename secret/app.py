@@ -46,7 +46,8 @@ def base():
     return Response(
         template,
         status_code=200,
-        headers={"Content-Type": "text/html", "Access-Control-Allow-Origin": "*"},
+        headers={"Content-Type": "text/html",
+                 "Access-Control-Allow-Origin": "*"},
     )
 
 
@@ -56,7 +57,8 @@ def index(lang):
     return Response(
         template,
         status_code=200,
-        headers={"Content-Type": "text/html", "Access-Control-Allow-Origin": "*"},
+        headers={"Content-Type": "text/html",
+                 "Access-Control-Allow-Origin": "*"},
     )
 
 
@@ -163,7 +165,8 @@ def view(lang, id):
     return Response(
         template,
         status_code=200,
-        headers={"Content-Type": "text/html", "Access-Control-Allow-Origin": "*"},
+        headers={"Content-Type": "text/html",
+                 "Access-Control-Allow-Origin": "*"},
     )
 
 
