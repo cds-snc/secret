@@ -28,7 +28,7 @@ lint:
 package: clean
 	cd secret &&\
 	AWS_DEFAULT_REGION=ca-central-1 chalice package --pkg-format terraform --stage prod ../aws/lambda
-	jq -r '.data.template_file.chalice_api_swagger.template' aws/lambda/chalice.tf.json > aws/lambda/swagger.json
+	jq -r '.locals.chalice_api_swagger' aws/lambda/chalice.tf.json > aws/lambda/swagger.json
 	sed -i 's/aws_lambda_function.api_handler.invoke_arn/invoke_arn/g' aws/lambda/swagger.json
 	rm aws/lambda/chalice.tf.json
 
