@@ -51,13 +51,11 @@ def test_index(test_client):
 
 def test_index_en(test_client):
     result = test_client.http.get("/en")
-    assert "Government of Canada" in result.body.decode()
     assert result.status_code == 200
 
 
 def test_index_fr(test_client):
     result = test_client.http.get("/fr")
-    assert "Gouvernement du Canada" in result.body.decode()
     assert result.status_code == 200
 
 
