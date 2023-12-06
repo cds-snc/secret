@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: secret
+  description: 'Share Secrets securily '
+  labels:
+    license: MIT
+spec:
+  type: website
+  lifecycle: experimental
+  owner: internal-sre
