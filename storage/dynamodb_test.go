@@ -8,24 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestMain(m *testing.M) {
-	// Ensure that a DynamoDB table exists
-	backend := DynamoDBBackend{}
-
-	_ = backend.Init(map[string]string{
-		"endpoint":   getDynamoDBHost(),
-		"region":     "ca-central-1",
-		"table_name": "secrets",
-	})
-
-	_ = backend.createTable()
-
-	// setup
-	code := m.Run()
-	// teardown
-	os.Exit(code)
-}
-
 func getDynamoDBHost() string {
 	host := "http://dynamodb-local:8000"
 
@@ -47,6 +29,7 @@ func TestDynamoDBBackendDelete(t *testing.T) {
 		"table_name": "secrets",
 	})
 
+	_ = backend.createTable()
 	err := backend.Delete(uuid.New())
 
 	if err != nil {
@@ -104,7 +87,7 @@ func TestDynamoDBBackendInitWithEndpoint(t *testing.T) {
 
 	err := backend.Init(map[string]string{
 		"region":     "ca-central-1",
-		"table_name": "s",
+		"table_name": "secrets",
 		"endpoint":   getDynamoDBHost(),
 	})
 
@@ -123,6 +106,7 @@ func TestDynamoDBBackendStore(t *testing.T) {
 		"region":     "ca-central-1",
 		"table_name": "secrets",
 	})
+	_ = backend.createTable()
 
 	id, err := backend.Store([]byte("test"), []byte("test"), 1000)
 
@@ -145,6 +129,7 @@ func TestDynamoDBBackendRetrieveWithTTLInFuture(t *testing.T) {
 		"region":     "ca-central-1",
 		"table_name": "secrets",
 	})
+	_ = backend.createTable()
 
 	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(time.Hour).Unix())
 
@@ -177,6 +162,7 @@ func TestDynamoDBBackendRetrieveWithTTLInPast(t *testing.T) {
 		"region":     "ca-central-1",
 		"table_name": "secrets",
 	})
+	_ = backend.createTable()
 
 	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(-time.Hour).Unix())
 
