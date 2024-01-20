@@ -11,12 +11,13 @@ jobs:
   go-tests:
     if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
+    container: golang:1.25.6-alpine
 
     services:
       dynamodb-local:
         image: "amazon/dynamodb-local@sha256:c8702bde709520b90930c20ee430d4123cd731da8e544cc4ccae0e2a78ee4fce"
         ports:
-          - 9000:8000
+          - 8000:8000
 
       kms-local:
         image: nsmithuk/local-kms
@@ -29,10 +30,6 @@ jobs:
           KMS_REGION: "ca-central-1"
 
     steps:
-      - name: Chown user
-        run: |
-          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
-
       - name: Checkout
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
@@ -41,12 +38,7 @@ jobs:
         # https://github.com/orgs/community/discussions/42127
         uses: docker://docker
         with:
-          args: docker restart "${{ job.services.kms-local.id }}"
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: "1.21.6"
+          args: docker restart local-kms
 
       - name: Install dependencies
         run: go get .
@@ -56,5 +48,3 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: "AWSACCESSKEYID"
           AWS_SECRET_ACCESS_KEY: "AWSSECRETACCESSKEY"
-          DYNAMODB_HOST: http://localhost:9000
-          KMS_HOST: http://localhost:8080

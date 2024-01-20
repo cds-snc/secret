@@ -22,4 +22,4 @@ go.work
 
 shared-local-instance.db
 build/release
-.devcontainer/kms/data/
+.devcontainer/docker/kms/data/
