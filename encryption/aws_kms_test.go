@@ -1,8 +1,19 @@
 package encryption
 
 import (
+	"os"
 	"testing"
 )
+
+func getKmsHost() string {
+	host := "http://kms-local:8080"
+
+	if h := os.Getenv("KMS_HOST"); h != "" {
+		host = h
+	}
+
+	return host
+}
 
 func TestAwsKmsEncryptionInitMissingKeyId(t *testing.T) {
 	t.Parallel()
@@ -38,7 +49,7 @@ func TestAwsKmsEncryptionInitValid(t *testing.T) {
 	e := AwsKmsEncryption{}
 
 	err := e.Init(map[string]string{
-		"endpoint":   "http://localhost:4566",
+		"endpoint":   getKmsHost(),
 		"kms_key_id": "test",
 		"region":     "ca-central-1",
 	})
@@ -54,7 +65,7 @@ func TestAwsKmsEncryptionEncrypt(t *testing.T) {
 	e := AwsKmsEncryption{}
 
 	_ = e.Init(map[string]string{
-		"endpoint":   "http://kms-local:8080",
+		"endpoint":   getKmsHost(),
 		"kms_key_id": "bc436485-5092-42b8-92a3-0aa8b93536dc", // Set in .devcontainer/docker/kms/init.yml
 		"region":     "ca-central-1",
 	})
@@ -82,7 +93,7 @@ func TestAwsKmsEncryptionDecrypt(t *testing.T) {
 	e := AwsKmsEncryption{}
 
 	_ = e.Init(map[string]string{
-		"endpoint":   "http://kms-local:8080",
+		"endpoint":   getKmsHost(),
 		"kms_key_id": "bc436485-5092-42b8-92a3-0aa8b93536dc", // Set in .devcontainer/docker/kms/init.yml
 		"region":     "ca-central-1",
 	})

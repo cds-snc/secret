@@ -1,11 +1,22 @@
 package storage
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+func getDynamoDBHost() string {
+	host := "http://dynamodb-local:8000"
+
+	if h := os.Getenv("DYNAMODB_HOST"); h != "" {
+		host = h
+	}
+
+	return host
+}
 
 func TestDynamoDBBackendDelete(t *testing.T) {
 	t.Parallel()
@@ -13,7 +24,7 @@ func TestDynamoDBBackendDelete(t *testing.T) {
 	backend := DynamoDBBackend{}
 
 	_ = backend.Init(map[string]string{
-		"endpoint":   "http://dynamodb-local:8000",
+		"endpoint":   getDynamoDBHost(),
 		"region":     "ca-central-1",
 		"table_name": "test",
 	})
@@ -76,7 +87,7 @@ func TestDynamoDBBackendInitWithEndpoint(t *testing.T) {
 	err := backend.Init(map[string]string{
 		"region":     "ca-central-1",
 		"table_name": "test",
-		"endpoint":   "http://localhost:8000",
+		"endpoint":   getDynamoDBHost(),
 	})
 
 	if err != nil {
@@ -90,7 +101,7 @@ func TestDynamoDBBackendStore(t *testing.T) {
 	backend := DynamoDBBackend{}
 
 	_ = backend.Init(map[string]string{
-		"endpoint":   "http://dynamodb-local:8000",
+		"endpoint":   getDynamoDBHost(),
 		"region":     "ca-central-1",
 		"table_name": "secrets",
 	})
@@ -112,7 +123,7 @@ func TestDynamoDBBackendRetrieveWithTTLInFuture(t *testing.T) {
 	backend := DynamoDBBackend{}
 
 	_ = backend.Init(map[string]string{
-		"endpoint":   "http://dynamodb-local:8000",
+		"endpoint":   getDynamoDBHost(),
 		"region":     "ca-central-1",
 		"table_name": "secrets",
 	})
@@ -144,7 +155,7 @@ func TestDynamoDBBackendRetrieveWithTTLInPast(t *testing.T) {
 	backend := DynamoDBBackend{}
 
 	_ = backend.Init(map[string]string{
-		"endpoint":   "http://dynamodb-local:8000",
+		"endpoint":   getDynamoDBHost(),
 		"region":     "ca-central-1",
 		"table_name": "secrets",
 	})
