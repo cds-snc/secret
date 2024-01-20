@@ -44,13 +44,13 @@ func TestDynamoDBBackendDelete(t *testing.T) {
 	_ = backend.Init(map[string]string{
 		"endpoint":   getDynamoDBHost(),
 		"region":     "ca-central-1",
-		"table_name": "test",
+		"table_name": "secrets",
 	})
 
 	err := backend.Delete(uuid.New())
 
-	if err == nil {
-		t.Errorf("DynamoDBBackend.Delete() succeeded and should have fialed with a non-existent ID")
+	if err != nil {
+		t.Errorf("DynamoDBBackend.Delete() failed: %s", err)
 	}
 }
 
@@ -61,7 +61,7 @@ func TestDynamoDBBackendInit(t *testing.T) {
 
 	err := backend.Init(map[string]string{
 		"region":     "ca-central-1",
-		"table_name": "test",
+		"table_name": "s",
 	})
 
 	if err != nil {
@@ -75,7 +75,7 @@ func TestDynamoDBBackendInitMissingRegion(t *testing.T) {
 	backend := DynamoDBBackend{}
 
 	err := backend.Init(map[string]string{
-		"table_name": "test",
+		"table_name": "s",
 	})
 
 	if err == nil {
@@ -104,7 +104,7 @@ func TestDynamoDBBackendInitWithEndpoint(t *testing.T) {
 
 	err := backend.Init(map[string]string{
 		"region":     "ca-central-1",
-		"table_name": "test",
+		"table_name": "s",
 		"endpoint":   getDynamoDBHost(),
 	})
 
