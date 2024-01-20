@@ -2,9 +2,6 @@ name: "CI Lambda"
 
 on:
   pull_request:
-    paths:
-      - "secret/**"
-      - ".github/workflows/**"
 
 defaults:
   run:
@@ -19,13 +16,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
-      - uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2.3.4
+      - name: Setup Go
+        uses: actions/setup-go@v4
         with:
-          python-version: '3.8'
+          go-version: "1.21.6"
 
-      - name: Run tests
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest
-          make install
-          make test
+      - name: Install dependencies
+        run: go get .
+
+      - name: Test
+        run: make test

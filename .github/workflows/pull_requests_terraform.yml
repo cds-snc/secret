@@ -50,25 +50,3 @@ jobs:
           directory: ./terragrunt/acm
           github-token: ${{ secrets.GITHUB_TOKEN }}
           terragrunt: true
-
-      - name: Install python if needed
-        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2.3.4
-        with:
-          python-version: '3.8'
-
-      - run: echo "/home/runner/.local/bin" >> $GITHUB_PATH
-
-      - name: Build lambda if needed
-        run: |
-          python -m pip install --upgrade pip
-          make install
-          make package
-
-      - name: Plan aws/lambda
-        uses: cds-snc/terraform-plan@28d2efe5155573489fa5b5816fad20d44d1f274b # v3.0.7
-        with:
-          comment-delete: true
-          comment-title: Plan for aws/lambda
-          directory: ./terragrunt/lambda
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          terragrunt: true

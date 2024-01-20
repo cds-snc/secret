@@ -1,0 +1,40 @@
+<gcds-container size="lg" border padding="400" centered>
+    <span class="font-bold">{{t `Attention` .Lang }}:&nbsp;</span>
+    <span>{{t `This service is being tested. Do not share protected data.` .Lang }}</span>
+</gcds-container>
+<gcds-container id="generate-div" size="lg" padding="400" margin="200" centered>
+    <h4 class="mb-400">{{t `Paste a password, secret message or private link below.` .Lang }}</h4>
+    <p class="mb-400">{{t `Keep sensitive info out of your email and chat logs.` .Lang }}</p>
+    <gcds-textarea textarea-id="secret" placeholder="{{t `Secret content goes here...` .Lang  }}">
+    </gcds-textarea>
+    <gcds-fieldset fieldset-id="fieldset">
+        <gcds-input input-id="optional_pass" label="{{t `Optional password` .Lang  }}"
+            placeholder="{{t `Password` .Lang  }}">
+        </gcds-input>
+        <gcds-select select-id="ttl" label="{{t `Lifetime` .Lang  }}" default-value="1 {{t `hour` .Lang  }}">
+            <option value="604800">7 {{t `days` .Lang }}</option>
+            <option value="259200">3 {{t `days` .Lang }}</option>
+            <option value="86400">1 {{t `day` .Lang }}</option>
+            <option value="43200">12 {{t `hours` .Lang }}</option>
+            <option value="14400">4 {{t `hours` .Lang }}</option>
+            <option value="3600" selected="">1 {{t `hour` .Lang }}</option>
+            <option value="1800">30 {{t `minutes` .Lang }}</option>
+            <option value="300">5 {{t `minutes` .Lang }}</option>
+        </gcds-select>
+        <gcds-button id="generate-btn">
+            {{t `Create a secret link` .Lang }}
+        </gcds-button>
+    </gcds-fieldset>
+</gcds-container>
+
+<gcds-container class="d-none" id="link-div" size="lg" padding="400" margin="200" centered>
+    <gcds-input input-id="link" label="{{t `Share this link:` .Lang  }}" aria-label="{{t `Secret link` .Lang  }}">
+    </gcds-input>
+    <p class="mb-400">
+        <span class="text-base">{{t `Expires at` .Lang }}&nbsp;</span>
+        <span id="expires-in" class="text-base"></span>
+    </p>
+    <gcds-button id="burn-btn" button-role="danger">
+        {{t `Burn this secret` .Lang }}
+    </gcds-button>
+</gcds-container>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="ltr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Ctext%20x='0'%20y='14'%3E🍁%3C/text%3E%3C/svg%3E"
+        type="image/svg+xml" />
+    <!-- Font Awesome (Icons) -->
+    <script src="https://kit.fontawesome.com/892cb27850.js" crossorigin="anonymous"></script>
+
+    <!-- GC Design System -->
+    <link rel="stylesheet"
+        href="https://cdn.design-system.alpha.canada.ca/@cdssnc/gcds-components@latest/dist/gcds/gcds.css">
+    <script type="module"
+        src="https://cdn.design-system.alpha.canada.ca/@cdssnc/gcds-components@latest/dist/gcds/gcds.esm.js"></script>
+    <script nomodule
+        src="https://cdn.design-system.alpha.canada.ca/@cdssnc/gcds-components@latest/dist/gcds/gcds.js"></script>
+    <link rel="stylesheet"
+        href="https://cdn.design-system.alpha.canada.ca/@cdssnc/gcds-utility@latest/dist/gcds-utility.min.css">
+    <title>Encrypted Message Crypté</title>
+</head>
+
+<body>
+    <gcds-header lang-href="/{{.OtherLang}}" skip-to-href="#mc" lang="{{.Lang}}"></gcds-header>
+
+    <div class="content-wrapper">
+        <main id="mc" class="container-xl mx-auto xl:px-0 sm:px-500 px-300 general-layout">
+            <h1 class="mb-500 mt-400">Encrypted Message Crypté</h1>
+            {{embed}}
+        </main>
+    </div>
+    <gcds-footer display="compact" lang="{{.Lang}}" contextual-heading="{{t `Version` .Lang }}">
+    </gcds-footer>
+    {{ template "js" . }}
+</body>
+
+</html>
