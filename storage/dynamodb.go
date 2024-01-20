@@ -28,8 +28,8 @@ type DynamoDBBackend struct {
 func (b *DynamoDBBackend) createTable() error {
 	primary_key := "id"
 
-	read_capacity := int64(1)
-	write_capacity := int64(1)
+	read_capacity := int64(5)
+	write_capacity := int64(5)
 
 	_, err := b.client.CreateTable(context.TODO(), &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
