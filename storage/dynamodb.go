@@ -25,6 +25,28 @@ type DynamoDBBackend struct {
 	table_name string
 }
 
+func (b *DynamoDBBackend) createTable() error {
+	primary_key := "id"
+
+	_, err := b.client.CreateTable(context.TODO(), &dynamodb.CreateTableInput{
+		AttributeDefinitions: []types.AttributeDefinition{
+			{
+				AttributeName: &primary_key,
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+		},
+		KeySchema: []types.KeySchemaElement{
+			{
+				AttributeName: &primary_key,
+				KeyType:       types.KeyTypeHash,
+			},
+		},
+		TableName: &b.table_name,
+	})
+
+	return err
+}
+
 func (b *DynamoDBBackend) Delete(id uuid.UUID) error {
 	_, err := b.client.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
 		Key: map[string]types.AttributeValue{

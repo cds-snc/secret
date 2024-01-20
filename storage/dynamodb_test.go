@@ -8,6 +8,24 @@ import (
 	"github.com/google/uuid"
 )
 
+func TestMain(m *testing.M) {
+	// Ensure that a DynamoDB table exists
+	backend := DynamoDBBackend{}
+
+	_ = backend.Init(map[string]string{
+		"endpoint":   getDynamoDBHost(),
+		"region":     "ca-central-1",
+		"table_name": "secrets",
+	})
+
+	_ = backend.createTable()
+
+	// setup
+	code := m.Run()
+	// teardown
+	os.Exit(code)
+}
+
 func getDynamoDBHost() string {
 	host := "http://dynamodb-local:8000"
 
