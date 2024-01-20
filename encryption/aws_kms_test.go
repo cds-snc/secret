@@ -6,7 +6,7 @@ import (
 )
 
 func getKmsHost() string {
-	host := "http://kms-local:8080"
+	host := "http://local-kms:8080"
 
 	if h := os.Getenv("KMS_HOST"); h != "" {
 		host = h

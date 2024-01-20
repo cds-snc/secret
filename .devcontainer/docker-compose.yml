@@ -11,9 +11,9 @@ services:
       - "./docker/dynamodb:/home/dynamodblocal/data"
     working_dir: /home/dynamodblocal
 
-  kms-local:
+  local-kms:
     image: "nsmithuk/local-kms"
-    container_name: kms-local
+    container_name: local-kms
     ports:
       - "8080:8080"
     volumes:
@@ -25,7 +25,7 @@ services:
   app:
     depends_on:
       - dynamodb-local
-      - kms-local
+      - local-kms
     image: "mcr.microsoft.com/devcontainers/go:1-1.21-bullseye"
     volumes:
       - ..:/workspace:cached
