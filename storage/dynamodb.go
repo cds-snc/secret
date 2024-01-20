@@ -44,6 +44,8 @@ func (b *DynamoDBBackend) createTable() error {
 		TableName: &b.table_name,
 	})
 
+	fmt.Print(err.Error())
+
 	return err
 }
 
