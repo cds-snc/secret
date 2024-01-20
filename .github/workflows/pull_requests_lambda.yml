@@ -38,7 +38,7 @@ jobs:
         # https://github.com/orgs/community/discussions/42127
         uses: docker://docker
         with:
-          args: docker restart local-kms
+          args: docker restart kms-local
 
       - name: Install dependencies
         run: go get .
