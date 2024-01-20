@@ -56,5 +56,5 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: "AWSACCESSKEYID"
           AWS_SECRET_ACCESS_KEY: "AWSSECRETACCESSKEY"
-          DYNAMODB_ENDPOINT: http://localhost:9000
-          KMS_ENDPOINT: http://localhost:8080
+          DYNAMODB_HOST: http://localhost:9000
+          KMS_HOST: http://localhost:8080
