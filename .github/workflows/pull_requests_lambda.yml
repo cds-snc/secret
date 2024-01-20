@@ -40,6 +40,9 @@ jobs:
         with:
           args: docker restart "${{ job.services.local-kms.id }}"
 
+      - name: Create DynamoDB table
+        run: ./devcontainer/dynamodb-local-create.sh
+
       - name: Install dependencies
         run: go get .
 
