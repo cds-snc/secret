@@ -19,7 +19,7 @@ jobs:
         ports:
           - 8000:8000
 
-      kms-local:
+      local-kms:
         image: nsmithuk/local-kms
         ports:
           - "8080:8080"
@@ -33,12 +33,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
-      - name: Restart kms-local
+      - name: Restart local-kms
         # Restart local-kms after volumes have been checked out
         # https://github.com/orgs/community/discussions/42127
         uses: docker://docker
         with:
-          args: docker restart kms-local
+          args: docker restart "${{ job.services.local-kms.id }}"
 
       - name: Install dependencies
         run: go get .
