@@ -29,8 +29,19 @@ jobs:
           KMS_REGION: "ca-central-1"
 
     steps:
+      - name: Chown user
+        run: |
+          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+
       - name: Checkout
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
+
+      - name: Restart kms-local
+        # Restart local-kms after volumes have been checked out
+        # https://github.com/orgs/community/discussions/42127
+        uses: docker://docker
+        with:
+          args: docker restart "${{ job.services.kms-local.id }}"
 
       - name: Setup Go
         uses: actions/setup-go@v4
