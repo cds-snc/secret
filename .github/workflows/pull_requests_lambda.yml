@@ -11,7 +11,7 @@ jobs:
   go-tests:
     if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
-    container: golang:1.25.6-alpine
+    container: golang:1.21.6-alpine
 
     services:
       dynamodb-local:
