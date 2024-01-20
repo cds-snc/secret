@@ -51,8 +51,6 @@ func (b *DynamoDBBackend) createTable() error {
 		},
 	})
 
-	fmt.Print(err.Error())
-
 	return err
 }
 
