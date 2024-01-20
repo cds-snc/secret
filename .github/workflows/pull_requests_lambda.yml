@@ -23,8 +23,8 @@ jobs:
         ports:
           - "8080:8080"
         volumes:
-          - "./docker/kms/data:/data"
-          - "./docker/kms/init:/init"
+          - "${{ github.workspace }}/docker/kms/data:/data"
+          - "${{ github.workspace }}/docker/kms/init:/init"
         env:
           KMS_REGION: "ca-central-1"
 
