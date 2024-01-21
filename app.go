@@ -157,13 +157,13 @@ func encryptAndSave(body string, ttl int64, encryption encryption.EncryptionBack
 	currentTimestamp := time.Now().Unix()
 	if ttl < currentTimestamp || ttl > currentTimestamp+(MAX_AGE_IN_DAYS*24*60*60) {
 		log.Error("Invalid TTL")
-		return "", fmt.Errorf("Invalid TTL")
+		return "", fmt.Errorf("invalid TTL")
 	}
 
 	// Validate the body
 	if len(body) > MAX_SECRET_LENGTH {
 		log.Error("Secret too long")
-		return "", fmt.Errorf("Secret too long")
+		return "", fmt.Errorf("secret too long")
 	}
 
 	// Encrypt the data
