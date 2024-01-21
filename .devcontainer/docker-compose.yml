@@ -12,7 +12,7 @@ services:
     working_dir: /home/dynamodblocal
 
   local-kms:
-    image: "nsmithuk/local-kms"
+    image: "nsmithuk/local-kms@sha256:c0d7ff506b4aa1c061ae6743cf292a99fb9ec1968a6e5f3a3272110925860501"
     container_name: local-kms
     ports:
       - "8080:8080"
@@ -26,7 +26,7 @@ services:
     depends_on:
       - dynamodb-local
       - local-kms
-    image: "mcr.microsoft.com/devcontainers/go:1-1.21-bullseye"
+    image: "mcr.microsoft.com/devcontainers/go:1-1.21-bullseye@sha256:10f3df65f989e75f62abc19426695cf5e65b0dd8f492475a8f6d953a5dc30b19"
     volumes:
       - ..:/workspace:cached
     command: sleep infinity
