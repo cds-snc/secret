@@ -13,7 +13,7 @@ resource "aws_ecr_repository" "app" {
 }
 
 resource "aws_ecr_lifecycle_policy" "encrypted_message_policy" {
-  repository = aws_ecr_repository.api.name
+  repository = aws_ecr_repository.app.name
   policy = jsonencode({
     "rules" : [
       {
