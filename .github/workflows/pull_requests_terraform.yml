@@ -50,3 +50,12 @@ jobs:
           directory: ./terragrunt/acm
           github-token: ${{ secrets.GITHUB_TOKEN }}
           terragrunt: true
+
+      - name: Plan aws/ecr
+        uses: cds-snc/terraform-plan@28d2efe5155573489fa5b5816fad20d44d1f274b # v3.0.7
+        with:
+          comment-delete: true
+          comment-title: Plan for aws/ecr
+          directory: ./terragrunt/ecr
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          terragrunt: true

@@ -40,3 +40,7 @@ jobs:
       - name: Apply aws/acm
         working-directory: terragrunt/acm
         run: terragrunt apply --terragrunt-non-interactive -auto-approve
+
+      - name: Apply aws/ecr
+        working-directory: terragrunt/ecr
+        run: terragrunt apply --terragrunt-non-interactive -auto-approve
