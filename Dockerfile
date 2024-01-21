@@ -1,4 +1,4 @@
-FROM golang:1.21.6-alpine as build
+FROM golang:1.21.6-alpine@sha256:fd78f2fb1e49bcf343079bbbb851c936a18fc694df993cbddaa24ace0cc724c5 as build
 
 ARG component=${component}
 
