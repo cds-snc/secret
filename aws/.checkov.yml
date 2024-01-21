@@ -14,3 +14,4 @@ skip-check:
   - CKV2_AWS_4 # TODO: set API gateway stage logging level
   - CKV2_AWS_29 # TODO: add WAF
   - CKV_AWS_136 # Public code already
+  - CKV_AWS_51 # Tags should be mutable to get latest
