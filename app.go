@@ -135,31 +135,12 @@ func CreateApp(encryption encryption.EncryptionBackend, storage storage.StorageB
 			return c.Status(fiber.StatusBadRequest).SendString("Invalid JSON")
 		}
 
-		// Validate the body
-		if len(body.Body) > MAX_SECRET_LENGTH {
-			log.Error("Secret too long")
-			return c.Status(fiber.StatusBadRequest).SendString("Secret too long")
-		}
+		// Encrypt and save the data
+		id, err := encryptAndSave(body.Body, body.TTL, encryption, storage)
 
-		// Check the TTL is in range
-		currentTimestamp := time.Now().Unix()
-		if body.TTL < currentTimestamp || body.TTL > currentTimestamp+(MAX_AGE_IN_DAYS*24*60*60) {
-			log.Error("Invalid TTL")
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid TTL")
-		}
-
-		// Encrypt the data
-		encryptedData, key, err := encryption.Encrypt([]byte(body.Body))
 		if err != nil {
 			log.Error(err)
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid JSON")
-		}
-
-		// Store the encrypted data
-		id, err := storage.Store(encryptedData, key, body.TTL)
-		if err != nil {
-			log.Error(err)
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid JSON")
+			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
 		// Return a JSON response with the UUID
@@ -169,6 +150,35 @@ func CreateApp(encryption encryption.EncryptionBackend, storage storage.StorageB
 	})
 
 	return app
+}
+
+func encryptAndSave(body string, ttl int64, encryption encryption.EncryptionBackend, storage storage.StorageBackend) (string, error) {
+	// Check the TTL is in range
+	currentTimestamp := time.Now().Unix()
+	if ttl < currentTimestamp || ttl > currentTimestamp+(MAX_AGE_IN_DAYS*24*60*60) {
+		log.Error("Invalid TTL")
+		return "", fmt.Errorf("Invalid TTL")
+	}
+
+	// Validate the body
+	if len(body) > MAX_SECRET_LENGTH {
+		log.Error("Secret too long")
+		return "", fmt.Errorf("Secret too long")
+	}
+
+	// Encrypt the data
+	encryptedData, key, err := encryption.Encrypt([]byte(body))
+	if err != nil {
+		return "", err
+	}
+
+	// Store the encrypted data
+	id, err := storage.Store(encryptedData, key, ttl)
+	if err != nil {
+		return "", err
+	}
+
+	return id.String(), nil
 }
 
 func getOtherLanguage(language string) string {
