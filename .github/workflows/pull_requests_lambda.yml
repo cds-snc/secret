@@ -2,30 +2,49 @@ name: "CI Lambda"
 
 on:
   pull_request:
-    paths:
-      - "secret/**"
-      - ".github/workflows/**"
 
 defaults:
   run:
     shell: bash
 
 jobs:
-  python-tests:
+  go-tests:
     if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
+    container: golang:1.21.6
+
+    services:
+      dynamodb-local:
+        image: "amazon/dynamodb-local@sha256:c8702bde709520b90930c20ee430d4123cd731da8e544cc4ccae0e2a78ee4fce"
+        ports:
+          - 8000:8000
+
+      local-kms:
+        image: nsmithuk/local-kms
+        ports:
+          - "8080:8080"
+        volumes:
+          - "${{ github.workspace }}/.devcontainer/docker/kms/data:/data/"
+          - "${{ github.workspace }}/.devcontainer/docker/kms/init:/init/"
+        env:
+          KMS_REGION: "ca-central-1"
 
     steps:
       - name: Checkout
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
-      - uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2.3.4
+      - name: Restart local-kms
+        # Restart local-kms after volumes have been checked out
+        # https://github.com/orgs/community/discussions/42127
+        uses: docker://docker
         with:
-          python-version: '3.8'
+          args: docker restart "${{ job.services.local-kms.id }}"
 
-      - name: Run tests
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest
-          make install
-          make test
+      - name: Install dependencies
+        run: go get .
+
+      - name: Test
+        run: make test
+        env:
+          AWS_ACCESS_KEY_ID: "AWSACCESSKEYID"
+          AWS_SECRET_ACCESS_KEY: "AWSSECRETACCESSKEY"

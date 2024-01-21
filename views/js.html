@@ -1,0 +1,158 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"
+    integrity="sha384-YkYpnhy3j3+zc3fQvzlbh4WGwDgt+06gsGsaApwM1O3IKIsKJk61C0Lr6YvbovUV"
+    crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/pbkdf2.js"
+    integrity="sha384-3TpUaoUrOhYmfB7OZ8ul4rKMr/NQRp2wiO+NtwbnXVaGIY/kv3Inu846n0P+AKwU"
+    crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"
+    integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT"
+    crossorigin="anonymous"></script>
+
+<script language="javascript" type="text/javascript">
+    const baseUrl = location.protocol + "//" + location.hostname;
+    const lang = "{{.Lang}}";
+    const keySize = 256;
+    const ivSize = 128;
+    const iterations = 128;
+    const viewId = "{{.ViewId}}"
+
+    const dateFormat = (ts) => {
+        let a = new Date(ts * 1000);
+        let months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        let year = a.getFullYear();
+        let month = `${a.getMonth() + 1}`.padStart(2, "0")
+        let date = `${a.getDate()}`.padStart(2, "0")
+        let hour = `${a.getHours()}`.padStart(2, "0")
+        let min = `${a.getMinutes()}`.padStart(2, "0")
+        let sec = `${a.getSeconds()}`.padStart(2, "0")
+        let time = year + '-' + month + '-' + date + ' ' + hour + ':' + min + ':' + sec;
+        return time;
+    }
+
+    const decrypt = (secret, password) => {
+        let salt = CryptoJS.enc.Hex.parse(secret.substr(0, 32));
+        let iv = CryptoJS.enc.Hex.parse(secret.substr(32, 32));
+        let encryptedMessage = secret.substring(64);
+        let key = CryptoJS.PBKDF2(password, salt, {
+            keySize: keySize / 32,
+            iterations: iterations,
+        });
+
+        let decryptedMessage = CryptoJS.AES.decrypt(encryptedMessage, key, {
+            iv: iv,
+            padding: CryptoJS.pad.Pkcs7,
+            mode: CryptoJS.mode.CBC,
+        });
+        return decryptedMessage.toString(CryptoJS.enc.Utf8);
+    };
+
+    const encrypt = (secret, password) => {
+        const salt = CryptoJS.lib.WordArray.random(128 / 8);
+        const key = CryptoJS.PBKDF2(password, salt, {
+            keySize: keySize / 32,
+            iterations: iterations,
+        });
+
+        let iv = CryptoJS.lib.WordArray.random(128 / 8);
+
+        let encrypted = CryptoJS.AES.encrypt(secret, key, {
+            iv: iv,
+            padding: CryptoJS.pad.Pkcs7,
+            mode: CryptoJS.mode.CBC,
+        });
+
+        let encyptedMessage =
+            salt.toString() + iv.toString() + encrypted.toString();
+        return encyptedMessage;
+    };
+
+    const retrieveEncryption = (id) => {
+        $.ajax({
+            type: "GET",
+            url: `/decrypt/${id}`,
+            async: true,
+            success: function (data) {
+                $("#secret").val(data.body)
+                if (data.body.endsWith("=")) { // Base64 padding from encryption, not 100%
+                    $("#decrypt-warning").toggleClass("d-none");
+                }
+                $("#confirm-div").toggleClass("d-none");
+                $("#secret-div").toggleClass("d-none");
+            },
+            error: function () {
+                $("#confirm-div").toggleClass("d-none");
+                $("#404-div").toggleClass("d-none");
+            }
+        });
+    }
+
+    const submitEncryption = (body, ttl) => {
+        $.ajax({
+            type: "POST",
+            url: "/encrypt",
+            dataType: "json",
+            async: true,
+            contentType: "application/json",
+            data: JSON.stringify({ body: body, ttl: ttl }),
+            success: function (data) {
+                $("#link").val(`${baseUrl}/${lang}/view/${data.id}`);
+                $("#link").prop("readonly", true);
+                $("#burn-btn").data('id', data.id);
+                $("#generate-div").toggleClass("d-none");
+                $("#link-div").toggleClass("d-none");
+            },
+        });
+    };
+
+    $("#burn-btn").click(() => {
+        let id = $("#burn-btn").data("id")
+        $.ajax({
+            type: "DELETE",
+            url: `/delete/${id}`,
+            async: true,
+            success: function () {
+                window.location = `/${lang}`
+            },
+        });
+    })
+
+    $("#decrypt-btn").click(() => {
+        const body = $("#secret").val()
+        const password = $("#optional_pass").val();
+
+        const result = decrypt(body, password)
+
+        if (result != "") {
+            $("#secret").val(result)
+        }
+    })
+
+    $("#generate-btn").click(() => {
+
+        $("#generate-btn").prop('disabled', true)
+        $('#generate-btn').addClass("bg-opacity-20")
+
+        const password = $("#optional_pass").val();
+
+        let ttl = parseInt($("#ttl").val());
+        ttl = Math.floor(Date.now() / 1000) + ttl;
+
+        $("#expires-in").text(dateFormat(ttl))
+
+        let secret = "";
+
+        if (password != "") {
+            secret = encrypt($("#secret").val(), password);
+        } else {
+            secret = $("#secret").val();
+        }
+
+        submitEncryption(secret, ttl);
+    });
+
+    $("#view-btn").click(() => {
+        $("#view-btn").prop('disabled', true)
+        $('#view-btn').addClass("bg-opacity-20")
+        retrieveEncryption(viewId)
+    })
+</script>

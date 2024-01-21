@@ -1,40 +1,26 @@
-babel-compile:
-	pybabel compile -f -D base -d secret/chalicelib/locales
+.PHONY: build-app build-lambda-app dev generate-keys run-app test
 
-babel-update:
-	pybabel extract -F babel.cfg -o secret/chalicelib/locales/base.pot secret/chalicelib/templates &&\
-	pybabel update -D base -i secret/chalicelib/locales/base.pot -d secret/chalicelib/locales -l en &&\
-	pybabel update -D base -i secret/chalicelib/locales/base.pot -d secret/chalicelib/locales -l fr
+build-app:
+	@echo "Building app..."
+	@docker build --build-arg component=app -t app .
 
-clean:
-	rm -rf secret/.chalice/deployments &&\
-	rm -f aws/lambda/swagger.json &&\
-	rm -f aws/lambda/deployment.zip 
+build-lambda-app:
+	@echo "Building lambda app..."
+	@docker build --build-arg component=lambda_app -t lambda-app .
 
-deploy:
-	cd terragrunt/lambda &&\
-	terragrunt apply --terragrunt-non-interactive -auto-approve
+dev:
+	@echo "Starting development server..."
+	@go run cmd/app/main.go
 
-fmt:
-	black secret
+generate-keys:
+	@echo "Generating keys..."
+	@openssl genrsa -out ./keys/private.pem 2048
+	@openssl rsa -in ./keys/private.pem -pubout > ./keys/public.pem
 
-install:
-	pip3 install --user -r requirements.txt &&\
-	pip3 install --user -r secret/requirements.txt
-
-lint:
-	flake8 --ignore E501,W503 secret
-
-package: clean
-	cd secret &&\
-	AWS_DEFAULT_REGION=ca-central-1 chalice package --pkg-format terraform --stage prod ../aws/lambda
-	jq -r '.locals.chalice_api_swagger' aws/lambda/chalice.tf.json > aws/lambda/swagger.json
-	sed -i 's/aws_lambda_function.api_handler.invoke_arn/invoke_arn/g' aws/lambda/swagger.json
-	rm aws/lambda/chalice.tf.json
-
-server:
-	cd secret &&\
-	chalice local
+run:
+	@echo "Starting server..."
+	@docker run -p 3000:3000 app
 
 test:
-	pytest -s secret/tests
+	@echo "Running tests..."
+	@go test -cover ./...

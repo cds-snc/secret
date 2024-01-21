@@ -1,5 +1,0 @@
-babel==2.13.1
-black==20.8b1 
-chalice==1.29.0
-flake8==3.9.2
-pytest==6.2.5

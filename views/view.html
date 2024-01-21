@@ -1,0 +1,37 @@
+<gcds-container size="lg" border padding="400" centered>
+    <span class="font-bold">{{ t `Attention` .Lang}}:&nbsp;</span>
+    <span>{{ t `This service is being tested. Do not share protected data.` .Lang}}</span>
+</gcds-container>
+
+<gcds-container id="confirm-div" size="lg" padding="400" margin="200" centered>
+    <h4 class="mb-400">{{ t `Click "View Secret" to continue` .Lang}}</h4>
+    <p class="mb-400">{{ t `Careful: We will only show it once.` .Lang}}</p>
+    <gcds-button id="view-btn">
+        {{ t `View secret` .Lang}}
+    </gcds-button>
+</gcds-container>
+
+<gcds-container class="d-none" id="404-div" size="lg" padding="400" margin="200" centered>
+    <h4 class="mb-400">{{ t `Your secret does not exist` .Lang}}</h4>
+    <p class="mb-400">{{ t `Either the link is wrong or the secret has expired.` .Lang}}</p>
+</gcds-container>
+
+<gcds-container class="d-none" id="secret-div" size="lg" padding="400" margin="200" centered>
+    <h4 class="mb-400">{{ t `This message is for you:` .Lang}}</h4>
+    <p class="mb-400">{{ t `Careful: We will only show it once.` .Lang}}</p>
+    <gcds-textarea textarea-id="secret"></gcds-textarea>
+    <gcds-container id="decrypt-warning" class="d-none" size="md">
+        <span class="font-bold">{{ t `Attention` .Lang}}:&nbsp;</span>
+        <span>{{ t `It looks like your message has been encrypted with an additional password. Please enter it below to
+            fully
+            decrypt the message.` .Lang}}</span>
+    </gcds-container>
+    <gcds-fieldset fieldset-id="fieldset" class="mt-400">
+        <gcds-input input-id="optional_pass" label="{{t `Optional password` .Lang }}"
+            placeholder="{{ t `Password` .Lang }}">
+        </gcds-input>
+    </gcds-fieldset>
+    <gcds-button id="decrypt-btn">
+        {{ t `Decrypt message with password` .Lang}}
+    </gcds-button>
+</gcds-container>

@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  dynamodb-local:
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest@sha256:eb8d4a591efddfc7b9976dfacd90993433e6ed6a02bd64c7a1345f110c87cfd6"
+    container_name: dynamodb-local
+    ports:
+      - "9000:8000"
+    volumes:
+      - "./docker/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+
+  local-kms:
+    image: "nsmithuk/local-kms"
+    container_name: local-kms
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./docker/kms/data:/data"
+      - "./docker/kms/init:/init"
+    environment:
+      KMS_REGION: "ca-central-1"
+
+  app:
+    depends_on:
+      - dynamodb-local
+      - local-kms
+    image: "mcr.microsoft.com/devcontainers/go:1-1.21-bullseye"
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    environment:
+      AWS_ACCESS_KEY_ID: 'AWSACCESSKEYID'
+      AWS_SECRET_ACCESS_KEY: 'AWSSECRETACCESSKEY'
+      SHELL: /bin/zsh
+      ENVIRONMENT: 'dev'
