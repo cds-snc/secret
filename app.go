@@ -42,6 +42,17 @@ func CreateApp(encryption encryption.EncryptionBackend, storage storage.StorageB
 		}, "base")
 	})
 
+	app.Get("/version", func(c *fiber.Ctx) error {
+		version := os.Getenv("GIT_SHA")
+		if version == "" {
+			version = "dev"
+		}
+
+		return c.JSON(fiber.Map{
+			"version": version,
+		})
+	})
+
 	app.Get("/:language", func(c *fiber.Ctx) error {
 		return c.Render("index", fiber.Map{
 			"Lang":      c.Params("language"),
