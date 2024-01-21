@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -53,6 +54,50 @@ func TestCreateAppGetHome(t *testing.T) {
 	// Check if the body contains the correct string
 	if !strings.Contains(string(body), "generate-div") {
 		t.Errorf("CreateApp() GET / = %v, want %v", string(body), "generate-div")
+	}
+}
+
+func TestCreateAppGetVersionWithGitShaSetAndWithout(t *testing.T) {
+	t.Parallel()
+
+	os.Setenv("GIT_SHA", "test")
+
+	app := CreateApp(&encryption.NullEncryption{}, &storage.NullBackend{})
+
+	req := httptest.NewRequest("GET", "/version", nil)
+	resp, _ := app.Test(req)
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Errorf("CreateApp() GET /version = %v, want %v", resp.StatusCode, fiber.StatusOK)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+
+	want := fmt.Sprintf(`{"version":"%s"}`, "test")
+
+	//Check if the body contains the right JSON response
+	if string(body) != want {
+		t.Errorf("CreateApp() GET /version = %v, want %v", string(body), want)
+	}
+
+	os.Unsetenv("GIT_SHA")
+
+	app = CreateApp(&encryption.NullEncryption{}, &storage.NullBackend{})
+
+	req = httptest.NewRequest("GET", "/version", nil)
+	resp, _ = app.Test(req)
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Errorf("CreateApp() GET /version = %v, want %v", resp.StatusCode, fiber.StatusOK)
+	}
+
+	body, _ = io.ReadAll(resp.Body)
+
+	want = fmt.Sprintf(`{"version":"%s"}`, "dev")
+
+	//Check if the body contains the right JSON response
+	if string(body) != want {
+		t.Errorf("CreateApp() GET /version = %v, want %v", string(body), want)
 	}
 }
 
