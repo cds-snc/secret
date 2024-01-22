@@ -19,10 +19,15 @@ RUN adduser \
 COPY . .
 RUN go build -o /server /app/cmd/${component}/main.go
 
+FROM alpine:latest as certs
+RUN apk --update add ca-certificates
+
 FROM scratch 
 
 ENV USER=app
 
+ENV PATH=/bin
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /etc/group /etc/group
 COPY --from=build --chown=${USER}:${USER} /server /server
