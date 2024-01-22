@@ -47,9 +47,9 @@ func init() {
 }
 
 // Handler will deal with Fiber working with Lambda
-func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	// If no name is provided in the HTTP request body, throw an error
-	return fiberLambda.ProxyWithContext(ctx, req)
+	return fiberLambda.ProxyWithContextV2(ctx, req)
 }
 
 func main() {
