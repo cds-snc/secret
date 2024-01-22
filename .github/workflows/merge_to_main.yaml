@@ -47,6 +47,10 @@ jobs:
         working-directory: terragrunt/ecr
         run: terragrunt apply --terragrunt-non-interactive -auto-approve
 
+      - name: Apply aws/lambda
+        working-directory: terragrunt/lambda
+        run: terragrunt apply --terragrunt-non-interactive -auto-approve
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@5a88a04c91d5c6f97aae0d9be790e64d9b1d47b7 # v1.7.1
