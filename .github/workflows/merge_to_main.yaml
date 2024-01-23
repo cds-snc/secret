@@ -62,3 +62,15 @@ jobs:
           docker tag lambda-app:latest $REGISTRY/app:$GITHUB_SHA-`date '+%Y-%m-%d'`
           docker push $REGISTRY/app:$GITHUB_SHA-`date '+%Y-%m-%d'`
           docker push $REGISTRY/app:latest
+
+      - name: Deploy new image
+        run: |
+          aws lambda update-function-code \
+            --function-name secrets-production-api \
+            --image-uri $REGISTRY/app:$GITHUB_SHA-`date '+%Y-%m-%d'`  > /dev/null 2>&1
+
+      - name: Logout of Amazon ECR
+        run: docker logout ${{ steps.login-ecr.outputs.registry }}
+
+      - name: CloudFront cache invalidate
+        run: aws cloudfront create-invalidation --distribution-id EI3NT2MMNFDOX --paths "/*"
