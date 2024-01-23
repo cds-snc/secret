@@ -49,7 +49,7 @@ module "api" {
   environment_variables = {
     DYNAMO_TABLE = aws_dynamodb_table.dynamodb-table.name
     ENV          = "PRODUCTION"
-    GIT_SHA      = var.git_sha
+    SHA          = var.git_sha
     KMS_ID       = aws_kms_key.key.id
   }
 

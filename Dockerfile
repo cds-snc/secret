@@ -24,7 +24,10 @@ RUN apk --update add ca-certificates
 
 FROM scratch 
 
+ARG GIT_SHA
+
 ENV USER=app
+ENV GIT_SHA=${GIT_SHA}
 
 ENV PATH=/bin
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
