@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,11 +16,15 @@ type pair struct {
 
 // InMemoryStorageBackend is a storage backend that stores data in memory
 type InMemoryStorageBackend struct {
+	m    sync.Mutex
 	data map[uuid.UUID]pair
 }
 
 // Delete deletes data from the storage backend
 func (b *InMemoryStorageBackend) Delete(id uuid.UUID) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	delete(b.data, id)
 	return nil
 }
@@ -27,6 +32,7 @@ func (b *InMemoryStorageBackend) Delete(id uuid.UUID) error {
 // Init initializes the storage backend
 func (b *InMemoryStorageBackend) Init(map[string]string) error {
 	b.data = make(map[uuid.UUID]pair)
+	b.m = sync.Mutex{}
 
 	// Purge data that is expired from the storage backend every minute
 	ticker := time.NewTicker(1 * time.Minute)
@@ -57,6 +63,9 @@ func (b *InMemoryStorageBackend) size() int {
 
 // Store stores data in the storage backend
 func (b *InMemoryStorageBackend) Store(data, key []byte, TTL int64) (uuid.UUID, error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	uuid := uuid.New()
 	b.data[uuid] = pair{Data: data, Key: key, TTL: TTL}
 	return uuid, nil
@@ -64,11 +73,14 @@ func (b *InMemoryStorageBackend) Store(data, key []byte, TTL int64) (uuid.UUID, 
 
 // Retrieve retrieves data from the storage backend
 func (b *InMemoryStorageBackend) Retrieve(id uuid.UUID) ([]byte, []byte, error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	if _, ok := b.data[id]; ok {
 
 		// Check if TTL timestamp is less than current unix time
 		if b.data[id].TTL < time.Now().Unix() {
-			b.Delete(id)
+			delete(b.data, id)
 			return nil, nil, fmt.Errorf("UUID not found")
 		}
 
