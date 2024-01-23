@@ -43,7 +43,7 @@ module "api" {
   enable_lambda_insights = true
 
   policies = [
-    aws_iam_policy_document.api_policies.json,
+    data.aws_iam_policy_document.api_policies.json,
   ]
 
   environment_variables = {
