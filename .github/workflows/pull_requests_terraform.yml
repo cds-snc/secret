@@ -59,3 +59,12 @@ jobs:
           directory: ./terragrunt/ecr
           github-token: ${{ secrets.GITHUB_TOKEN }}
           terragrunt: true
+
+      - name: Plan aws/lambda
+        uses: cds-snc/terraform-plan@b84f6e89f3e7b5ecf648a2c036c043c73d82da59 # v3.1.0
+        with:
+          comment-delete: true
+          comment-title: Plan for aws/lambda
+          directory: ./terragrunt/lambda
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          terragrunt: true

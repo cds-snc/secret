@@ -4,6 +4,25 @@ data "archive_file" "lambda-warmer" {
   output_path = "/tmp/lambda-warmer.zip"
 }
 
+resource "aws_iam_role" "lambda-iam-role" {
+  name               = "${var.product_name}-${var.env}-lambda-iam-role"
+  assume_role_policy = <<EOF
+{
+   "Version":"2012-10-17",
+   "Statement":[
+      {
+         "Sid":"",
+         "Effect":"Allow",
+         "Principal":{
+            "Service":"lambda.amazonaws.com"
+         },
+         "Action":"sts:AssumeRole"
+      }
+   ]
+}
+EOF
+}
+
 resource "aws_lambda_function" "lambda-warmer" {
   filename         = data.archive_file.lambda-warmer.output_path
   function_name    = "${var.product_name}-${var.env}-lambda-warmer"
