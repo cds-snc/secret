@@ -26,7 +26,7 @@ dependency "ecr" {
   # module hasn't been applied yet.
   mock_outputs_allowed_terraform_commands = ["plan-all", "validate"]
   mock_outputs = {
-    ecr_repository_arn = ""
+    ecr_arn = ""
     ecr_repository_url = ""
   }
 }
@@ -37,6 +37,6 @@ include {
 
 inputs = {
   domain_cert_arn     = dependency.acm.outputs.domain_cert_arn
-  ecr_repository_arn = dependency.ecr.outputs.ecr_repository_arn
+  ecr_arn = dependency.ecr.outputs.ecr_arn
   ecr_repository_url = dependency.ecr.outputs.ecr_repository_url
 }
