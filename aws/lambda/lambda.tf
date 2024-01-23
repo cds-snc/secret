@@ -38,7 +38,7 @@ module "api" {
   ecr_arn   = var.ecr_arn
   image_uri = "${var.ecr_repository_url}:latest"
 
-  memory_size            = 128
+  memory                 = 128
   timeout                = 60
   enable_lambda_insights = true
 
@@ -46,13 +46,11 @@ module "api" {
     aws_iam_policy_document.api_policies.json,
   ]
 
-  environment {
-    variables = {
-      DYNAMO_TABLE = aws_dynamodb_table.dynamodb-table.name
-      ENV          = "PRODUCTION"
-      GIT_SHA      = var.git_sha
-      KMS_ID       = aws_kms_key.key.id
-    }
+  environment_variables = {
+    DYNAMO_TABLE = aws_dynamodb_table.dynamodb-table.name
+    ENV          = "PRODUCTION"
+    GIT_SHA      = var.git_sha
+    KMS_ID       = aws_kms_key.key.id
   }
 
   billing_tag_value = var.product_name
