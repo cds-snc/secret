@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.28.1
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.1
 	github.com/gofiber/fiber/v2 v2.52.1
-	github.com/gofiber/template/html/v2 v2.1.0
+	github.com/gofiber/template/html/v2 v2.1.1
 	github.com/google/uuid v1.6.0
 )
 
@@ -30,7 +30,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.22.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.27.0 // indirect
 	github.com/aws/smithy-go v1.20.0 // indirect
-	github.com/gofiber/template v1.8.2 // indirect
+	github.com/gofiber/template v1.8.3 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
