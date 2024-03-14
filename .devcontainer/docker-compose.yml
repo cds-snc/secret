@@ -3,7 +3,7 @@ version: '3'
 services:
   dynamodb-local:
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
-    image: "amazon/dynamodb-local:latest@sha256:eb8d4a591efddfc7b9976dfacd90993433e6ed6a02bd64c7a1345f110c87cfd6"
+    image: "amazon/dynamodb-local:latest@sha256:9769d8391d4d4533a0f7d92c3ff43b09b3e39fd6cdedffda7c8cfb1016fa529b"
     container_name: dynamodb-local
     ports:
       - "9000:8000"
@@ -26,7 +26,7 @@ services:
     depends_on:
       - dynamodb-local
       - local-kms
-    image: "mcr.microsoft.com/devcontainers/go:1-1.21-bullseye@sha256:98207cded4717ff511f5d4a4f7c30c10018df4b3157f811ceb4a62f7ac7d40cf"
+    image: "mcr.microsoft.com/devcontainers/go:1-1.21-bullseye@sha256:c04402b78ed1a5a7f8eb9b0ff8ec315f996e0193220e56e02274e565eddf6848"
     volumes:
       - ..:/workspace:cached
     command: sleep infinity
