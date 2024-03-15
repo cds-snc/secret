@@ -43,6 +43,29 @@ resource "aws_cloudfront_distribution" "api" {
     compress    = true
   }
 
+  # Prevent caching of displaying the secret
+  ordered_cache_behavior {
+    path_pattern    = "/*/view/*"
+    allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods  = ["GET", "HEAD"]
+
+    forwarded_values {
+      query_string = true
+      cookies {
+        forward = "none"
+      }
+    }
+
+    target_origin_id           = module.api.function_name
+    viewer_protocol_policy     = "redirect-to-https"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security_headers_api.id
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+    compress    = true
+  }
+
   # Prevent caching of version calls
   ordered_cache_behavior {
     path_pattern    = "/version"
