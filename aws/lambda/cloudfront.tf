@@ -45,7 +45,7 @@ resource "aws_cloudfront_distribution" "api" {
 
   # Prevent caching of displaying the secret
   ordered_cache_behavior {
-    path_pattern    = "/*/view/*"
+    path_pattern    = "/decrypt/*"
     allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods  = ["GET", "HEAD"]
 
