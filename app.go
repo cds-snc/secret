@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -212,12 +211,10 @@ func loadLocales() map[string]map[string]string {
 		translations[locale] = make(map[string]string)
 		file := fmt.Sprintf("./locales/%s.json", locale)
 
-		jsonFile, err := os.Open(file)
+		byteValue, err := os.ReadFile(file)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		byteValue, _ := io.ReadAll(jsonFile)
 
 		var result map[string]interface{}
 		json.Unmarshal([]byte(byteValue), &result)
