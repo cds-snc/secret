@@ -158,6 +158,8 @@ github.com/aws/aws-sdk-go-v2/service/kms v1.29.1 h1:OdjJjUWFlMZLAMl54ASxIpZdGEes
 github.com/aws/aws-sdk-go-v2/service/kms v1.29.1/go.mod h1:Cbx2uxEX0bAB7SlSY+ys05ZBkEb8IbmuAOcGVmDfJFs=
 github.com/aws/aws-sdk-go-v2/service/kms v1.29.2 h1:3UaqodPQqPh5XowXJ9fWM4TQqwuftYYFvej+RI5uIO8=
 github.com/aws/aws-sdk-go-v2/service/kms v1.29.2/go.mod h1:elLDaj+1RNl9Ovn3dB6dWLVo5WQ+VLSUMKegl7N96fY=
+github.com/aws/aws-sdk-go-v2/service/kms v1.30.0 h1:yS0JkEdV6h9JOo8sy2JSpjX+i7vsKifU8SIeHrqiDhU=
+github.com/aws/aws-sdk-go-v2/service/kms v1.30.0/go.mod h1:+I8VUUSVD4p5ISQtzpgSva4I8cJ4SQ4b1dcBcof7O+g=
 github.com/aws/aws-sdk-go-v2/service/sso v1.18.6 h1:dGrs+Q/WzhsiUKh82SfTVN66QzyulXuMDTV/G8ZxOac=
 github.com/aws/aws-sdk-go-v2/service/sso v1.18.6/go.mod h1:+mJNDdF+qiUlNKNC3fxn74WWNN+sOiGOEImje+3ScPM=
 github.com/aws/aws-sdk-go-v2/service/sso v1.18.7 h1:eajuO3nykDPdYicLlP3AGgOyVN3MOlFmZv7WGTuJPow=
