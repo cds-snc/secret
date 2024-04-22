@@ -15,7 +15,7 @@ jobs:
 
     services:
       dynamodb-local:
-        image: "amazon/dynamodb-local@sha256:9769d8391d4d4533a0f7d92c3ff43b09b3e39fd6cdedffda7c8cfb1016fa529b"
+        image: "amazon/dynamodb-local@sha256:a72e734c42833ae35f069dc1678fc364db41ca926a367599d8caad317be02cba"
         ports:
           - 8000:8000
 
@@ -36,7 +36,7 @@ jobs:
       - name: Restart local-kms
         # Restart local-kms after volumes have been checked out
         # https://github.com/orgs/community/discussions/42127
-        uses: docker://docker@sha256:a2d55c6061a342e42db62654b7b7cdf16113828a80b3827cbd9453806c08549c
+        uses: docker://docker@sha256:c8d3a4b0f8c9f09c8d220fc68028a401f5b7f5c159a7dd62fc0915f8617ea66f
         with:
           args: docker restart "${{ job.services.local-kms.id }}"
 
