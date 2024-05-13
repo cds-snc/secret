@@ -26,7 +26,7 @@ services:
     depends_on:
       - dynamodb-local
       - local-kms
-    image: "mcr.microsoft.com/devcontainers/go:1-1.21-bullseye@sha256:c23be6befc7fbe2685f2fdd8161b314bc28bf34a0d37f6777461ccb21c17972d"
+    image: "mcr.microsoft.com/devcontainers/go:1-1.21-bullseye@sha256:0ea3913135923a684b37f9e75a1e9adbb14551199244656b77f516c4c0c6d5bc"
     volumes:
       - ..:/workspace:cached
     command: sleep infinity
