@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.15
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.13.17
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.32.3
-	github.com/aws/aws-sdk-go-v2/service/kms v1.31.3
+	github.com/aws/aws-sdk-go-v2/service/kms v1.32.1
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.2
 	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/gofiber/template/html/v2 v2.1.1
