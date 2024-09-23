@@ -5,8 +5,8 @@ go 1.22.2
 require (
 	github.com/aws/aws-lambda-go v1.47.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.33
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.2
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.34.8
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.3
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.34.9
 	github.com/aws/aws-sdk-go-v2/service/kms v1.35.7
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.2
 	github.com/gofiber/fiber/v2 v2.52.5
