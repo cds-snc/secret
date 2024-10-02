@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "api_policies" {
 }
 
 module "api" {
-  source    = "github.com/cds-snc/terraform-modules//lambda?ref=v9.6.5"
+  source    = "github.com/cds-snc/terraform-modules//lambda?ref=v9.6.7"
   name      = "${var.product_name}-${var.env}-api"
   ecr_arn   = var.ecr_arn
   image_uri = "${var.ecr_repository_url}:latest"
