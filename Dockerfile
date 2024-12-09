@@ -19,7 +19,7 @@ RUN adduser \
 COPY . .
 RUN go build -o /server /app/cmd/${component}/main.go
 
-FROM alpine:latest@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a as certs
+FROM alpine:latest@sha256:21dc6063fd678b478f57c0e13f47560d0ea4eeba26dfc947b2a4f81f686b9f45 as certs
 RUN apk --update add ca-certificates
 
 FROM scratch 
