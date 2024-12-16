@@ -214,6 +214,8 @@ github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.17 h1:36xxDfD
 github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.17/go.mod h1:A4XQVRy4yJ70Sk5Qz2tuCQX6J5kXcRa53nGP6wtgntM=
 github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.18 h1:EL375vbbYdO1gp1CxcT3NgGkbfL7faI1dU2xy0UDyk8=
 github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.18/go.mod h1:/B+gC+N4DV30CmxqrmrMZIhysIzwlLiI6jTI+ImB2ms=
+github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.20 h1:bwHhhCScKRAYJtaWVT+jDpt74GybN2nxI6+InkRjqGM=
+github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.20/go.mod h1:/RfYH8CUMQuq/3CIEVGHLkqkA9KtbBF5omt2Ae8xc0s=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 h1:c5I5iH+DZcH3xOIMlz3/tCKJDaHFwYEmxvlh2fAcFo8=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11/go.mod h1:cRrYDYAMUohBJUtUnOhydaMHtiK/1NZ0Otc9lIb6O0Y=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.15.0 h1:xWCwjjvVz2ojYTP4kBKUuUh9ZrXfcAXpflhOUUeXg1k=
@@ -448,6 +450,8 @@ github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.6 h1:hIl7Z1zcfdzsl5Si
 github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.6/go.mod h1:VswWf/9ztSHHnMP3SMtGqrFOooVXI6NTDNjTcyLQ2HY=
 github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.7 h1:iMfaehOsfZiXNuty641i2UBMUx9hrJOWKt1Fd2UaHf4=
 github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.7/go.mod h1:Hcjb2SiUo9v1GhpXjRNW7hAwfzAPfrsgnlKpP5UYEPY=
+github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.8 h1:ntqHwZb+ZyVz0CFYUG0sQ02KMMJh+iXeV3bXoba+s4A=
+github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.8/go.mod h1:Hcjb2SiUo9v1GhpXjRNW7hAwfzAPfrsgnlKpP5UYEPY=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4 h1:/b31bi3YVNlkzkBrm9LfpaKoaYZUxIAj4sHfOTmLfqw=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4/go.mod h1:2aGXHFmbInwgP9ZfpmdIfOELL79zhdNYNmReK8qDfdQ=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.0 h1:a33HuFlO0KsveiP90IUJh8Xr/cx9US2PqkSroaLc+o8=
