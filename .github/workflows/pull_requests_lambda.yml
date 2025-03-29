@@ -11,7 +11,7 @@ jobs:
   go-tests:
     if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
-    container: golang:1.24.0@sha256:3f7444391c51a11a039bf0359ee81cc64e663c17d787ad0e637a4de1a3f62a71
+    container: golang:1.24.1@sha256:52ff1b35ff8de185bf9fd26c70077190cd0bed1e9f16a2d498ce907e5c421268
 
     services:
       dynamodb-local:
@@ -36,7 +36,7 @@ jobs:
       - name: Restart local-kms
         # Restart local-kms after volumes have been checked out
         # https://github.com/orgs/community/discussions/42127
-        uses: docker://docker@sha256:2bb691ba28efd798c67bfcea6f7b1dda19c969ceabc2f32480e8b153e79c647f
+        uses: docker://docker@sha256:4924fece44d61eeec47f619a4c35cd70fa2a31cd36b6283943a122369549fb82
         with:
           args: docker restart "${{ job.services.local-kms.id }}"
 
