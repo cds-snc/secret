@@ -43,7 +43,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Plan aws/acm
-        uses: cds-snc/terraform-plan@56630b0c2bcbe4e9b641f5332ea0288893e1f764 # v3.4.1
+        uses: cds-snc/terraform-plan@28de868605a2499187505c82b4f199abd8877b26 # v3.4.2
         with:
           comment-delete: true
           comment-title: Plan for aws/acm
@@ -52,7 +52,7 @@ jobs:
           terragrunt: true
 
       - name: Plan aws/ecr
-        uses: cds-snc/terraform-plan@56630b0c2bcbe4e9b641f5332ea0288893e1f764 # v3.4.1
+        uses: cds-snc/terraform-plan@28de868605a2499187505c82b4f199abd8877b26 # v3.4.2
         with:
           comment-delete: true
           comment-title: Plan for aws/ecr
@@ -61,7 +61,7 @@ jobs:
           terragrunt: true
 
       - name: Plan aws/lambda
-        uses: cds-snc/terraform-plan@56630b0c2bcbe4e9b641f5332ea0288893e1f764 # v3.4.1
+        uses: cds-snc/terraform-plan@28de868605a2499187505c82b4f199abd8877b26 # v3.4.2
         with:
           comment-delete: true
           comment-title: Plan for aws/lambda
