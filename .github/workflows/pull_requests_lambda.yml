@@ -36,7 +36,7 @@ jobs:
       - name: Restart local-kms
         # Restart local-kms after volumes have been checked out
         # https://github.com/orgs/community/discussions/42127
-        uses: docker://docker@sha256:24173119fa6d1b5b4a27ab164fa7863deb66574ee5b90fef3b85dc888ef1a7e6
+        uses: docker://docker@sha256:ea9d20492ca1caaaba78e68453433895d256173c79281756e88b745647fcbcfd
         with:
           args: docker restart "${{ job.services.local-kms.id }}"
 
