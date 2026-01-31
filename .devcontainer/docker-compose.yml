@@ -12,7 +12,7 @@ services:
     working_dir: /home/dynamodblocal
 
   local-kms:
-    image: "nsmithuk/local-kms@sha256:c0d7ff506b4aa1c061ae6743cf292a99fb9ec1968a6e5f3a3272110925860501"
+    image: "nsmithuk/local-kms@sha256:aeb41a840eb501c5c3a1574fcb888ed04be7004a296e816bc656030c40e8b85d"
     container_name: local-kms
     ports:
       - "8080:8080"
