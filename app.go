@@ -52,6 +52,16 @@ func CreateApp(encryption encryption.EncryptionBackend, storage storage.StorageB
 		})
 	})
 
+	app.Get("/.well-known/security.txt", func(c *fiber.Ctx) error {
+		c.Set("Content-Type", "text/plain")
+		securityTxt := `Contact: mailto:ZZTBSCYBERS@tbs-sct.gc.ca
+Contact: https://hackerone.com/tbs-sct/
+Canonical: https://cdssandbox.xyz/.well-known/security.txt
+Expires: 2026-03-02T12:00:00.000Z
+Preferred-Languages: en, fr`
+		return c.SendString(securityTxt)
+	})
+
 	app.Get("/:language", func(c *fiber.Ctx) error {
 		return c.Render("index", fiber.Map{
 			"Lang":      c.Params("language"),
