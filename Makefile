@@ -9,7 +9,7 @@ build-app:
 
 build-lambda-app:
 	@echo "Building lambda app..."
-	@docker build --build-arg component=lambda_app --build-arg GIT_SHA=$(GIT_SHA) -t lambda-app .
+	@docker build --build-arg component=lambda_app --build-arg GIT_SHA=$(GIT_SHA) --provenance=false --sbom=false -t lambda-app .
 
 dev:
 	@echo "Starting development server..."
