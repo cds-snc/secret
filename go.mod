@@ -2,14 +2,14 @@ module github.com/cds-snc/secret
 
 go 1.23
 
-toolchain go1.25.6
+toolchain go1.26.0
 
 require (
 	github.com/aws/aws-lambda-go v1.52.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.31
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.54.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.49.5
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.55.0
+	github.com/aws/aws-sdk-go-v2/service/kms v1.50.0
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.2
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/gofiber/template/html/v2 v2.1.3
