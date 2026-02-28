@@ -20,7 +20,7 @@ jobs:
           - 8000:8000
 
       local-kms:
-        image: nsmithuk/local-kms@sha256:aeb41a840eb501c5c3a1574fcb888ed04be7004a296e816bc656030c40e8b85d
+        image: nsmithuk/local-kms@sha256:e070866476b20973a9e23a9b636204b7a222e4169a6e03198d27b80d47ed28e3
         ports:
           - "8080:8080"
         volumes:
@@ -36,7 +36,7 @@ jobs:
       - name: Restart local-kms
         # Restart local-kms after volumes have been checked out
         # https://github.com/orgs/community/discussions/42127
-        uses: docker://docker@sha256:8bcbad4b45f0bff9d3e809d85a7ac589390f0be8acbc526850c998c35c1243fd
+        uses: docker://docker@sha256:68f6d9ab84623d1116c5432a3b924a07ee09960e6129ca1cb03ef14010588cb4
         with:
           args: docker restart "${{ job.services.local-kms.id }}"
 
