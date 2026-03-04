@@ -57,7 +57,7 @@ func CreateApp(encryption encryption.EncryptionBackend, storage storage.StorageB
 		securityTxt := `Contact: mailto:ZZTBSCYBERS@tbs-sct.gc.ca
 Contact: https://hackerone.com/tbs-sct/
 Canonical: https://cdssandbox.xyz/.well-known/security.txt
-Expires: 2026-03-02T12:00:00.000Z
+Expires: 2026-03-20T23:59:59.000Z
 Preferred-Languages: en, fr`
 		return c.SendString(securityTxt)
 	})
