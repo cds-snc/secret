@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.26.1
 
 require (
-	github.com/aws/aws-lambda-go v1.52.0
+	github.com/aws/aws-lambda-go v1.53.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.12
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.35
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.56.2
