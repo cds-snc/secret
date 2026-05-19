@@ -2,7 +2,7 @@ module github.com/cds-snc/secret
 
 go 1.24
 
-toolchain go1.26.1
+toolchain go1.26.3
 
 require (
 	github.com/aws/aws-lambda-go v1.54.0
