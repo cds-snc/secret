@@ -18,6 +18,8 @@ data "aws_sns_topic" "internal_sre_alert" {
 }
 
 data "aws_iam_policy_document" "access_alerts_cloudtrail_kms" {
+  # checkov:skip=CKV_AWS_109:KMS key policies require the account root principal to enable IAM administration; CloudTrail service access is SourceArn scoped.
+  # checkov:skip=CKV_AWS_111:KMS key policies require the account root principal to enable IAM administration; CloudTrail write access is SourceArn and encryption-context scoped.
   statement {
     sid    = "EnableIAMUserPermissions"
     effect = "Allow"
@@ -201,6 +203,7 @@ resource "aws_s3_bucket_policy" "access_alerts_cloudtrail" {
 
 resource "aws_cloudtrail" "access_alerts" {
   # checkov:skip=CKV_AWS_67:This trail is scoped to the app's single deployment region.
+  # checkov:skip=CKV2_AWS_10:EventBridge consumes CloudTrail events directly for these alerts; CloudWatch Logs delivery would duplicate the S3 log archive.
   name                          = local.access_alerts_trail_name
   s3_bucket_name                = module.access_alerts_cloudtrail_bucket.s3_bucket_id
   include_global_service_events = false
