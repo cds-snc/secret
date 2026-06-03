@@ -23,3 +23,4 @@ go.work
 shared-local-instance.db
 build/release
 .devcontainer/docker/kms/data/
+.DS_Store
