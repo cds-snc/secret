@@ -192,14 +192,6 @@ data "aws_iam_policy_document" "access_alerts_cloudtrail_bucket" {
   }
 }
 
-resource "aws_s3_bucket_policy" "access_alerts_cloudtrail" {
-  bucket = module.access_alerts_cloudtrail_bucket.s3_bucket_id
-  policy = data.aws_iam_policy_document.access_alerts_cloudtrail_bucket.json
-
-  depends_on = [
-    module.access_alerts_cloudtrail_bucket,
-  ]
-}
 
 resource "aws_cloudtrail" "access_alerts" {
   # checkov:skip=CKV_AWS_67:This trail is scoped to the app's single deployment region.
