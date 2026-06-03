@@ -1,11 +1,16 @@
+data "aws_partition" "current" {}
+
 locals {
-  access_alerts_trail_name            = "${var.product_name}-${var.env}-access-alerts"
-  access_alerts_trail_arn             = "arn:aws:cloudtrail:${var.region}:${data.aws_caller_identity.current.account_id}:trail/${local.access_alerts_trail_name}"
-  access_alerts_cloudtrail_bucket     = lower("${var.product_name}-${var.env}-${data.aws_caller_identity.current.account_id}-${var.region}-cloudtrail")
-  api_lambda_assumed_role_arn_prefix  = "arn:aws:sts::${data.aws_caller_identity.current.account_id}:assumed-role/${var.product_name}-${var.env}-api/"
-  cloudtrail_log_expiration_days      = 90
-  cloudtrail_log_noncurrent_days      = 90
-  eventbridge_management_events_state = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
+  access_alerts_trail_name             = "${var.product_name}-${var.env}-access-alerts"
+  access_alerts_cloudtrail_bucket_name = lower("${var.product_name}-${var.env}-${data.aws_caller_identity.current.account_id}-${var.region}-cloudtrail")
+  api_lambda_assumed_role_arn_prefix   = "arn:${data.aws_partition.current.partition}:sts::${data.aws_caller_identity.current.account_id}:assumed-role/${var.product_name}-${var.env}-api/"
+  cloudtrail_log_expiration_days       = 90
+  cloudtrail_log_noncurrent_days       = 90
+  eventbridge_management_events_state  = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
+
+  # CloudTrail needs its S3 and KMS policies before the trail is created, so this
+  # cannot reference aws_cloudtrail.access_alerts.arn without creating a cycle.
+  access_alerts_expected_trail_arn = "arn:${data.aws_partition.current.partition}:cloudtrail:${var.region}:${data.aws_caller_identity.current.account_id}:trail/${local.access_alerts_trail_name}"
 
   access_alerts_tags = {
     Name       = local.access_alerts_trail_name
@@ -26,7 +31,7 @@ data "aws_iam_policy_document" "access_alerts_cloudtrail_kms" {
 
     principals {
       type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"]
     }
 
     actions   = ["kms:*"]
@@ -48,7 +53,7 @@ data "aws_iam_policy_document" "access_alerts_cloudtrail_kms" {
     condition {
       test     = "StringEquals"
       variable = "aws:SourceArn"
-      values   = [local.access_alerts_trail_arn]
+      values   = [local.access_alerts_expected_trail_arn]
     }
   }
 
@@ -67,13 +72,13 @@ data "aws_iam_policy_document" "access_alerts_cloudtrail_kms" {
     condition {
       test     = "StringEquals"
       variable = "aws:SourceArn"
-      values   = [local.access_alerts_trail_arn]
+      values   = [local.access_alerts_expected_trail_arn]
     }
 
     condition {
       test     = "StringLike"
       variable = "kms:EncryptionContext:aws:cloudtrail:arn"
-      values   = [local.access_alerts_trail_arn]
+      values   = [local.access_alerts_expected_trail_arn]
     }
   }
 }
@@ -95,7 +100,7 @@ resource "aws_kms_alias" "access_alerts_cloudtrail" {
 module "access_alerts_cloudtrail_bucket" {
   source = "github.com/cds-snc/terraform-modules//S3?ref=v9.6.8"
 
-  bucket_name       = local.access_alerts_cloudtrail_bucket
+  bucket_name       = local.access_alerts_cloudtrail_bucket_name
   billing_tag_value = var.product_name
 
   versioning = {
@@ -159,7 +164,7 @@ data "aws_iam_policy_document" "access_alerts_cloudtrail_bucket" {
     condition {
       test     = "StringEquals"
       variable = "aws:SourceArn"
-      values   = [local.access_alerts_trail_arn]
+      values   = [local.access_alerts_expected_trail_arn]
     }
   }
 
@@ -187,7 +192,7 @@ data "aws_iam_policy_document" "access_alerts_cloudtrail_bucket" {
     condition {
       test     = "StringEquals"
       variable = "aws:SourceArn"
-      values   = [local.access_alerts_trail_arn]
+      values   = [local.access_alerts_expected_trail_arn]
     }
   }
 }
@@ -212,7 +217,7 @@ resource "aws_cloudtrail" "access_alerts" {
   kms_key_id                    = aws_kms_key.access_alerts_cloudtrail.arn
 
   advanced_event_selector {
-    name = "Unexpected DynamoDB table reads"
+    name = "Unexpected DynamoDB table access"
 
     field_selector {
       field  = "eventCategory"
@@ -235,18 +240,13 @@ resource "aws_cloudtrail" "access_alerts" {
     }
 
     field_selector {
-      field  = "readOnly"
-      equals = ["true"]
-    }
-
-    field_selector {
       field           = "userIdentity.arn"
       not_starts_with = [local.api_lambda_assumed_role_arn_prefix]
     }
   }
 
   advanced_event_selector {
-    name = "KMS read management events"
+    name = "KMS management events"
 
     field_selector {
       field  = "eventCategory"
@@ -257,11 +257,6 @@ resource "aws_cloudtrail" "access_alerts" {
       field  = "eventSource"
       equals = ["kms.amazonaws.com"]
     }
-
-    field_selector {
-      field  = "readOnly"
-      equals = ["true"]
-    }
   }
 
   tags = local.access_alerts_tags
@@ -271,16 +266,15 @@ resource "aws_cloudtrail" "access_alerts" {
   ]
 }
 
-resource "aws_cloudwatch_event_rule" "unexpected_dynamodb_read" {
-  name        = "${var.product_name}-${var.env}-unexpected-dynamodb-read"
-  description = "Detect unexpected reads from the ${aws_dynamodb_table.dynamodb-table.name} DynamoDB table"
+resource "aws_cloudwatch_event_rule" "unexpected_dynamodb_access" {
+  name        = "${var.product_name}-${var.env}-unexpected-dynamodb-access"
+  description = "Detect unexpected access to the ${aws_dynamodb_table.dynamodb-table.name} DynamoDB table"
 
   event_pattern = jsonencode({
     source      = ["aws.dynamodb"]
     detail-type = ["AWS API Call via CloudTrail"]
     detail = {
       eventSource = ["dynamodb.amazonaws.com"]
-      readOnly    = [true]
       resources = {
         ARN = [aws_dynamodb_table.dynamodb-table.arn]
       }
@@ -297,8 +291,8 @@ resource "aws_cloudwatch_event_rule" "unexpected_dynamodb_read" {
   })
 }
 
-resource "aws_cloudwatch_event_target" "unexpected_dynamodb_read" {
-  rule      = aws_cloudwatch_event_rule.unexpected_dynamodb_read.name
+resource "aws_cloudwatch_event_target" "unexpected_dynamodb_access" {
+  rule      = aws_cloudwatch_event_rule.unexpected_dynamodb_access.name
   target_id = "InternalSREAlert"
   arn       = data.aws_sns_topic.internal_sre_alert.arn
 
@@ -312,13 +306,13 @@ resource "aws_cloudwatch_event_target" "unexpected_dynamodb_read" {
       source_ip  = "$.detail.sourceIPAddress"
     }
 
-    input_template = "\"Unexpected DynamoDB read in ${var.product_name}-${var.env}\\nEvent: <event_name>\\nPrincipal: <principal>\\nSource IP: <source_ip>\\nRegion: <region>\\nResource: <resource>\\nTime: <event_time>\""
+    input_template = "\"Unexpected DynamoDB access in ${var.product_name}-${var.env}\\nEvent: <event_name>\\nPrincipal: <principal>\\nSource IP: <source_ip>\\nRegion: <region>\\nResource: <resource>\\nTime: <event_time>\""
   }
 }
 
-resource "aws_cloudwatch_event_rule" "unexpected_kms_decrypt" {
-  name        = "${var.product_name}-${var.env}-unexpected-kms-decrypt"
-  description = "Detect unexpected KMS Decrypt calls against the ${var.product_name}-${var.env} key"
+resource "aws_cloudwatch_event_rule" "unexpected_kms_access" {
+  name        = "${var.product_name}-${var.env}-unexpected-kms-access"
+  description = "Detect unexpected access to the ${var.product_name}-${var.env} key"
   state       = local.eventbridge_management_events_state
 
   event_pattern = jsonencode({
@@ -326,8 +320,6 @@ resource "aws_cloudwatch_event_rule" "unexpected_kms_decrypt" {
     detail-type = ["AWS API Call via CloudTrail"]
     detail = {
       eventSource = ["kms.amazonaws.com"]
-      eventName   = ["Decrypt"]
-      readOnly    = [true]
       resources = {
         ARN = [aws_kms_key.key.arn]
       }
@@ -344,8 +336,8 @@ resource "aws_cloudwatch_event_rule" "unexpected_kms_decrypt" {
   })
 }
 
-resource "aws_cloudwatch_event_target" "unexpected_kms_decrypt" {
-  rule      = aws_cloudwatch_event_rule.unexpected_kms_decrypt.name
+resource "aws_cloudwatch_event_target" "unexpected_kms_access" {
+  rule      = aws_cloudwatch_event_rule.unexpected_kms_access.name
   target_id = "InternalSREAlert"
   arn       = data.aws_sns_topic.internal_sre_alert.arn
 
@@ -359,6 +351,6 @@ resource "aws_cloudwatch_event_target" "unexpected_kms_decrypt" {
       source_ip  = "$.detail.sourceIPAddress"
     }
 
-    input_template = "\"Unexpected KMS Decrypt in ${var.product_name}-${var.env}\\nEvent: <event_name>\\nPrincipal: <principal>\\nSource IP: <source_ip>\\nRegion: <region>\\nResource: <resource>\\nTime: <event_time>\""
+    input_template = "\"Unexpected KMS access in ${var.product_name}-${var.env}\\nEvent: <event_name>\\nPrincipal: <principal>\\nSource IP: <source_ip>\\nRegion: <region>\\nResource: <resource>\\nTime: <event_time>\""
   }
 }
