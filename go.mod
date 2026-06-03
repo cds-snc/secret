@@ -1,6 +1,6 @@
 module github.com/cds-snc/secret
 
-go 1.24
+go 1.25.0
 
 toolchain go1.26.4
 
@@ -44,5 +44,5 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 )
