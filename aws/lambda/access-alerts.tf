@@ -125,6 +125,87 @@ module "access_alerts_cloudtrail_bucket" {
   tags = local.access_alerts_tags
 }
 
+data "aws_iam_policy_document" "access_alerts_cloudtrail_bucket" {
+  statement {
+    sid    = "DenyInsecureTransport"
+    effect = "Deny"
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    actions = ["s3:*"]
+
+    resources = [
+      module.access_alerts_cloudtrail_bucket.s3_bucket_arn,
+      "${module.access_alerts_cloudtrail_bucket.s3_bucket_arn}/*",
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+
+  statement {
+    sid    = "AWSCloudTrailAclCheck"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions   = ["s3:GetBucketAcl"]
+    resources = [module.access_alerts_cloudtrail_bucket.s3_bucket_arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceArn"
+      values   = [local.access_alerts_expected_trail_arn]
+    }
+  }
+
+  statement {
+    sid    = "AWSCloudTrailWrite"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions = ["s3:PutObject"]
+
+    resources = [
+      "${module.access_alerts_cloudtrail_bucket.s3_bucket_arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values   = ["bucket-owner-full-control"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceArn"
+      values   = [local.access_alerts_expected_trail_arn]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "access_alerts_cloudtrail" {
+  bucket = module.access_alerts_cloudtrail_bucket.s3_bucket_id
+  policy = data.aws_iam_policy_document.access_alerts_cloudtrail_bucket.json
+
+  depends_on = [
+    module.access_alerts_cloudtrail_bucket,
+  ]
+}
+
 resource "aws_cloudtrail" "access_alerts" {
   # checkov:skip=CKV_AWS_67:This trail is scoped to the app's single deployment region.
   # checkov:skip=CKV2_AWS_10:EventBridge consumes CloudTrail events directly for these alerts; CloudWatch Logs delivery would duplicate the S3 log archive.
@@ -179,6 +260,10 @@ resource "aws_cloudtrail" "access_alerts" {
   }
 
   tags = local.access_alerts_tags
+
+  depends_on = [
+    aws_s3_bucket_policy.access_alerts_cloudtrail,
+  ]
 }
 
 resource "aws_cloudwatch_event_rule" "unexpected_dynamodb_access" {
