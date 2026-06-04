@@ -245,20 +245,6 @@ resource "aws_cloudtrail" "access_alerts" {
     }
   }
 
-  advanced_event_selector {
-    name = "KMS management events"
-
-    field_selector {
-      field  = "eventCategory"
-      equals = ["Management"]
-    }
-
-    field_selector {
-      field  = "eventSource"
-      equals = ["kms.amazonaws.com"]
-    }
-  }
-
   tags = local.access_alerts_tags
 
   depends_on = [
@@ -313,6 +299,8 @@ resource "aws_cloudwatch_event_target" "unexpected_dynamodb_access" {
 resource "aws_cloudwatch_event_rule" "unexpected_kms_access" {
   name        = "${var.product_name}-${var.env}-unexpected-kms-access"
   description = "Detect unexpected access to the ${var.product_name}-${var.env} key"
+  # KMS management events are recorded by aws-controltower-BaselineCloudTrail.
+  # The app-owned trail records only DynamoDB data events.
   state       = local.eventbridge_management_events_state
 
   event_pattern = jsonencode({
