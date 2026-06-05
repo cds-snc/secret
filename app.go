@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,7 +19,23 @@ import (
 const MAX_AGE_IN_DAYS = 7
 const MAX_SECRET_LENGTH = 64_000
 
+type AppConfig struct {
+	RequireAdditionalPassword bool
+}
+
+func AppConfigFromEnv() AppConfig {
+	requireAdditionalPassword, _ := strconv.ParseBool(os.Getenv("REQUIRE_ADDITIONAL_PASSWORD"))
+
+	return AppConfig{
+		RequireAdditionalPassword: requireAdditionalPassword,
+	}
+}
+
 func CreateApp(encryption encryption.EncryptionBackend, storage storage.StorageBackend) *fiber.App {
+	return CreateAppWithConfig(encryption, storage, AppConfigFromEnv())
+}
+
+func CreateAppWithConfig(encryption encryption.EncryptionBackend, storage storage.StorageBackend, config AppConfig) *fiber.App {
 	engine := html.New("./views", ".html")
 
 	locales := loadLocales()
@@ -36,8 +53,9 @@ func CreateApp(encryption encryption.EncryptionBackend, storage storage.StorageB
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.Render("index", fiber.Map{
-			"Lang":      "en",
-			"OtherLang": getOtherLanguage("en"),
+			"Lang":                      "en",
+			"OtherLang":                 getOtherLanguage("en"),
+			"RequireAdditionalPassword": config.RequireAdditionalPassword,
 		}, "base")
 	})
 
@@ -64,8 +82,9 @@ Preferred-Languages: en, fr`
 
 	app.Get("/:language", func(c *fiber.Ctx) error {
 		return c.Render("index", fiber.Map{
-			"Lang":      c.Params("language"),
-			"OtherLang": getOtherLanguage(c.Params("language")),
+			"Lang":                      c.Params("language"),
+			"OtherLang":                 getOtherLanguage(c.Params("language")),
+			"RequireAdditionalPassword": config.RequireAdditionalPassword,
 		}, "base")
 	})
 
@@ -78,9 +97,10 @@ Preferred-Languages: en, fr`
 		}
 
 		return c.Render("view", fiber.Map{
-			"Lang":      c.Params("language"),
-			"OtherLang": getOtherLanguage(c.Params("language")),
-			"ViewId":    id,
+			"Lang":                      c.Params("language"),
+			"OtherLang":                 getOtherLanguage(c.Params("language")),
+			"ViewId":                    id,
+			"RequireAdditionalPassword": config.RequireAdditionalPassword,
 		}, "base")
 	})
 

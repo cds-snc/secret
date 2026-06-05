@@ -8,9 +8,16 @@
     <gcds-textarea textarea-id="secret" placeholder="{{t `Secret content goes here...` .Lang  }}">
     </gcds-textarea>
     <gcds-fieldset fieldset-id="fieldset">
-        <gcds-input input-id="optional_pass" label="{{t `Optional password` .Lang  }}"
-            placeholder="{{t `Password` .Lang  }}">
+        {{ if .RequireAdditionalPassword }}
+        <gcds-input input-id="optional_pass" name="optional_pass" type="password"
+            label="{{t `Additional password` .Lang }}" placeholder="{{t `Password` .Lang }}" required
+            error-message="{{t `Enter an additional password` .Lang }}">
         </gcds-input>
+        {{ else }}
+        <gcds-input input-id="optional_pass" name="optional_pass" type="password"
+            label="{{t `Optional password` .Lang }}" placeholder="{{t `Password` .Lang }}">
+        </gcds-input>
+        {{ end }}
         <gcds-select select-id="ttl" label="{{t `Lifetime` .Lang  }}" default-value="1 {{t `hour` .Lang  }}">
             <option value="604800">7 {{t `days` .Lang }}</option>
             <option value="259200">3 {{t `days` .Lang }}</option>

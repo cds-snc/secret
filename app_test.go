@@ -57,6 +57,94 @@ func TestCreateAppGetHome(t *testing.T) {
 	}
 }
 
+func TestCreateAppGetHomeWithOptionalAdditionalPassword(t *testing.T) {
+	t.Parallel()
+
+	app := CreateAppWithConfig(&encryption.NullEncryption{}, &storage.NullBackend{}, AppConfig{})
+
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, _ := app.Test(req)
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Errorf("CreateApp() GET / = %v, want %v", resp.StatusCode, fiber.StatusOK)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	bodyString := string(body)
+
+	if !strings.Contains(bodyString, `label="Optional password"`) {
+		t.Errorf("CreateApp() GET / = %v, want %v", bodyString, `label="Optional password"`)
+	}
+
+	if !strings.Contains(bodyString, `const requireAdditionalPassword = false;`) {
+		t.Errorf("CreateApp() GET / = %v, want %v", bodyString, `const requireAdditionalPassword = false;`)
+	}
+
+	if strings.Contains(bodyString, `error-message="Enter an additional password"`) {
+		t.Errorf("CreateApp() GET / should not require an additional password by default")
+	}
+}
+
+func TestCreateAppGetHomeWithRequiredAdditionalPassword(t *testing.T) {
+	t.Parallel()
+
+	app := CreateAppWithConfig(
+		&encryption.NullEncryption{},
+		&storage.NullBackend{},
+		AppConfig{RequireAdditionalPassword: true},
+	)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, _ := app.Test(req)
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Errorf("CreateApp() GET / = %v, want %v", resp.StatusCode, fiber.StatusOK)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	bodyString := string(body)
+
+	if !strings.Contains(bodyString, `label="Additional password"`) {
+		t.Errorf("CreateApp() GET / = %v, want %v", bodyString, `label="Additional password"`)
+	}
+
+	if !strings.Contains(bodyString, `error-message="Enter an additional password"`) {
+		t.Errorf("CreateApp() GET / = %v, want %v", bodyString, `error-message="Enter an additional password"`)
+	}
+
+	if !strings.Contains(bodyString, `const requireAdditionalPassword = true;`) {
+		t.Errorf("CreateApp() GET / = %v, want %v", bodyString, `const requireAdditionalPassword = true;`)
+	}
+}
+
+func TestCreateAppGetHomeWithRequiredAdditionalPasswordInFrench(t *testing.T) {
+	t.Parallel()
+
+	app := CreateAppWithConfig(
+		&encryption.NullEncryption{},
+		&storage.NullBackend{},
+		AppConfig{RequireAdditionalPassword: true},
+	)
+
+	req := httptest.NewRequest("GET", "/fr", nil)
+	resp, _ := app.Test(req)
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Errorf("CreateApp() GET /fr = %v, want %v", resp.StatusCode, fiber.StatusOK)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	bodyString := string(body)
+
+	if !strings.Contains(bodyString, `label="Mot de passe additionnel"`) {
+		t.Errorf("CreateApp() GET /fr = %v, want %v", bodyString, `label="Mot de passe additionnel"`)
+	}
+
+	if !strings.Contains(bodyString, `error-message="Entrez un mot de passe additionnel"`) {
+		t.Errorf("CreateApp() GET /fr = %v, want %v", bodyString, `error-message="Entrez un mot de passe additionnel"`)
+	}
+}
+
 func TestCreateAppGetVersionWithGitShaSetAndWithout(t *testing.T) {
 	t.Parallel()
 
@@ -267,6 +355,26 @@ func TestCreateAppPostEncrypt(t *testing.T) {
 	//Check if the body contains a UUID id
 	if !strings.Contains(string(body), `"id":"`) {
 		t.Errorf("CreateApp() POST /encrypt = %v, want %v", string(body), `"id":"`)
+	}
+}
+
+func TestCreateAppPostEncryptWithRequiredAdditionalPasswordFlag(t *testing.T) {
+	t.Parallel()
+
+	app := CreateAppWithConfig(
+		&encryption.NullEncryption{},
+		&storage.NullBackend{},
+		AppConfig{RequireAdditionalPassword: true},
+	)
+
+	ttl := fmt.Sprint(time.Now().Add(time.Hour).Unix())
+
+	req := httptest.NewRequest("POST", "/encrypt", strings.NewReader(`{"body":"test", "ttl":`+ttl+`}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, _ := app.Test(req)
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Errorf("CreateApp() POST /encrypt = %v, want %v", resp.StatusCode, fiber.StatusOK)
 	}
 }
 
