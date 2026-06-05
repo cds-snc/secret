@@ -47,10 +47,10 @@ module "api" {
   ]
 
   environment_variables = {
-    DYNAMO_TABLE                 = aws_dynamodb_table.dynamodb-table.name
-    ENV                          = "PRODUCTION"
-    SHA                          = var.git_sha
-    KMS_ID                       = aws_kms_key.key.id
+    DYNAMO_TABLE                = aws_dynamodb_table.dynamodb-table.name
+    ENV                         = "PRODUCTION"
+    SHA                         = var.git_sha
+    KMS_ID                      = aws_kms_key.key.id
     REQUIRE_ADDITIONAL_PASSWORD = tostring(var.require_additional_password)
   }
 
