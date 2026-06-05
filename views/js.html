@@ -15,6 +15,7 @@
     const ivSize = 128;
     const iterations = 128;
     const viewId = "{{.ViewId}}"
+    const requireAdditionalPassword = {{if .RequireAdditionalPassword}}true{{else}}false{{end}};
 
     const dateFormat = (ts) => {
         let a = new Date(ts * 1000);
@@ -104,6 +105,13 @@
         });
     };
 
+    const validateRequiredAdditionalPassword = () => {
+        const passwordInput = $("#optional_pass")[0];
+        if (passwordInput && typeof passwordInput.validate === "function") {
+            passwordInput.validate();
+        }
+    }
+
     $("#burn-btn").click(() => {
         let id = $("#burn-btn").data("id")
         $.ajax({
@@ -129,10 +137,18 @@
 
     $("#generate-btn").click(() => {
 
-        $("#generate-btn").prop('disabled', true)
-        $('#generate-btn').addClass("bg-opacity-20")
+        const generateBtn = $("#generate-btn")
+        generateBtn.prop('disabled', true)
+        generateBtn.addClass("bg-opacity-20")
 
-        const password = $("#optional_pass").val();
+        const password = $("#optional_pass").val() || "";
+
+        if (requireAdditionalPassword && password == "") {
+            validateRequiredAdditionalPassword()
+            generateBtn.prop('disabled', false)
+            generateBtn.removeClass("bg-opacity-20")
+            return;
+        }
 
         let ttl = parseInt($("#ttl").val());
         ttl = Math.floor(Date.now() / 1000) + ttl;

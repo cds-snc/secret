@@ -13,3 +13,8 @@ variable "ecr_repository_url" {
 variable "git_sha" {
   type = string
 }
+
+variable "require_additional_password" {
+  type    = bool
+  default = false
+}
