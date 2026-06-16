@@ -472,6 +472,8 @@ github.com/aws/aws-sdk-go-v2/service/kms v1.51.1 h1:zuSf4olLKZW8cF/W9Y5wvGT+/0ra
 github.com/aws/aws-sdk-go-v2/service/kms v1.51.1/go.mod h1:Y0+uxvxz6ib4KktRdK0V4X45Vcs/JyYoz8H71pO8xeI=
 github.com/aws/aws-sdk-go-v2/service/kms v1.52.0 h1:QNtg+Mtj1zmepk568+UKBD5DFfqh+ESTUUqQT27JkQc=
 github.com/aws/aws-sdk-go-v2/service/kms v1.52.0/go.mod h1:Y0+uxvxz6ib4KktRdK0V4X45Vcs/JyYoz8H71pO8xeI=
+github.com/aws/aws-sdk-go-v2/service/kms v1.53.4 h1:PEgVSsWtR8NNxsDxFL2Ywisi7R+1EFQARGsT4q3mWwI=
+github.com/aws/aws-sdk-go-v2/service/kms v1.53.4/go.mod h1:3EeKyDGPGSCEphG2OolwNGNF45RvQIfm27AYYpfEWrw=
 github.com/aws/aws-sdk-go-v2/service/signin v1.0.4 h1:HpI7aMmJ+mm1wkSHIA2t5EaFFv5EFYXePW30p1EIrbQ=
 github.com/aws/aws-sdk-go-v2/service/signin v1.0.4/go.mod h1:C5RdGMYGlfM0gYq/tifqgn4EbyX99V15P2V3R+VHbQU=
 github.com/aws/aws-sdk-go-v2/service/signin v1.0.5 h1:VrhDvQib/i0lxvr3zqlUwLwJP4fpmpyD9wYG1vfSu+Y=
