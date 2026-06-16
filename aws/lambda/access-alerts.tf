@@ -87,18 +87,20 @@ resource "aws_kms_key" "access_alerts_cloudtrail" {
   description             = "${var.product_name}-${var.env} access alerts CloudTrail log key"
   deletion_window_in_days = 7
   enable_key_rotation     = true
+  provider                = aws.core_services
   policy                  = data.aws_iam_policy_document.access_alerts_cloudtrail_kms.json
 
   tags = local.access_alerts_tags
 }
 
 resource "aws_kms_alias" "access_alerts_cloudtrail" {
+  provider      = aws.core_services
   name          = "alias/${var.product_name}-${var.env}-access-alerts-cloudtrail"
   target_key_id = aws_kms_key.access_alerts_cloudtrail.key_id
 }
 
 module "access_alerts_cloudtrail_bucket" {
-  source = "github.com/cds-snc/terraform-modules//S3?ref=v9.6.8"
+  source = "github.com/cds-snc/terraform-modules//S3?ref=v11.3.5"
 
   bucket_name       = local.access_alerts_cloudtrail_bucket_name
   billing_tag_value = var.product_name
