@@ -6,6 +6,7 @@ data "archive_file" "lambda-warmer" {
 
 resource "aws_iam_role" "lambda-iam-role" {
   name               = "${var.product_name}-${var.env}-lambda-iam-role"
+  provider           = aws.core_services
   assume_role_policy = <<EOF
 {
    "Version":"2012-10-17",
