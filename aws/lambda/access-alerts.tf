@@ -100,7 +100,7 @@ resource "aws_kms_alias" "access_alerts_cloudtrail" {
 }
 
 module "access_alerts_cloudtrail_bucket" {
-  source = "github.com/cds-snc/terraform-modules//S3?ref=v11.3.5"
+  source = "github.com/cds-snc/terraform-modules//S3?ref=v11.3.6"
 
   bucket_name       = local.access_alerts_cloudtrail_bucket_name
   billing_tag_value = var.product_name
