@@ -27,8 +27,8 @@
             decrypt the message.` .Lang}}</span>
     </gcds-container>
     <gcds-fieldset fieldset-id="fieldset" class="mt-400">
-        <gcds-input input-id="optional_pass" label="{{t `Optional password` .Lang }}"
-            placeholder="{{ t `Password` .Lang }}">
+        <gcds-input input-id="optional_pass" name="optional_pass" type="password"
+            label="{{t `Optional password` .Lang }}" placeholder="{{ t `Password` .Lang }}">
         </gcds-input>
     </gcds-fieldset>
     <gcds-button id="decrypt-btn">
@@ -36,5 +36,4 @@
     </gcds-button>
     <p id="decrypt-error" class="d-none text-danger mt-300" role="alert">
         {{ t `The password is incorrect, or the encrypted message is damaged.` .Lang}}
-    </p>
-</gcds-container>
+    </p></gcds-container>

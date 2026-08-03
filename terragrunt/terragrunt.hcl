@@ -23,6 +23,12 @@ provider "aws" {
   region              = var.region
   version             = "~> 5.0"
   allowed_account_ids = [var.account_id]
+
+  default_tags {
+    tags = {
+      ssc_cbrid = "22DI"
+    }
+  }
 }
 
 provider "aws" {
@@ -30,6 +36,25 @@ provider "aws" {
   region              = "us-east-1"
   version             = "~> 5.0"
   allowed_account_ids = [var.account_id]
+
+  default_tags {
+    tags = {
+      ssc_cbrid = "22DI"
+    }
+  }
+}
+
+provider "aws" {
+  alias               = "core_services"
+  region              = var.region
+  version             = "~> 5.0"
+  allowed_account_ids = [var.account_id]
+
+  default_tags {
+    tags = {
+      ssc_cbrid = "22DH"
+    }
+  }
 }
 EOF
 }

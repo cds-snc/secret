@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "api_policies" {
 }
 
 module "api" {
-  source    = "github.com/cds-snc/terraform-modules//lambda?ref=v9.6.8"
+  source    = "github.com/cds-snc/terraform-modules//lambda?ref=v11.3.5"
   name      = "${var.product_name}-${var.env}-api"
   ecr_arn   = var.ecr_arn
   image_uri = "${var.ecr_repository_url}:latest"
@@ -47,10 +47,11 @@ module "api" {
   ]
 
   environment_variables = {
-    DYNAMO_TABLE = aws_dynamodb_table.dynamodb-table.name
-    ENV          = "PRODUCTION"
-    SHA          = var.git_sha
-    KMS_ID       = aws_kms_key.key.id
+    DYNAMO_TABLE                = aws_dynamodb_table.dynamodb-table.name
+    ENV                         = "PRODUCTION"
+    SHA                         = var.git_sha
+    KMS_ID                      = aws_kms_key.key.id
+    REQUIRE_ADDITIONAL_PASSWORD = tostring(var.require_additional_password)
   }
 
   billing_tag_value = var.product_name

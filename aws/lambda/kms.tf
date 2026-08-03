@@ -3,6 +3,7 @@ data "aws_caller_identity" "current" {}
 resource "aws_kms_key" "key" {
   description         = "${var.product_name}-${var.env} encryption key"
   enable_key_rotation = true
+  provider            = aws.core_services
 
   # This policy allows encryption/decryption in Cloudwatch
   policy = <<EOF

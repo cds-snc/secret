@@ -10,6 +10,8 @@
     "Secret content goes here...": "Votre contenu secret est à coller ici",
     "Options": "Paramètres",
     "Optional password": "Mot de passe optionnel",
+    "Additional password": "Mot de passe additionnel",
+    "Enter an additional password": "Entrez un mot de passe additionnel",
     "Password": "Mot de passe",
     "Lifetime": "Durée de vie",
     "days": "jours",
