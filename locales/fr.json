@@ -29,5 +29,9 @@
     "Either the link is wrong or the secret has expired.": "Soit le lien est erroné, soit le secret a expiré.",
     "This message is for you:": "Ce message est pour vous:",
     "It looks like your message has been encrypted with an additional password. Please enter it below to fully decrypt the message.": "Il semble que votre message ait été crypté avec un code additionnel mot de passe. Veuillez le saisir ci-dessous pour décrypter entièrement le message",
-    "Decrypt message with password": "Décrypter le message avec un mot de passe"
+    "Decrypt message with password": "Décrypter le message avec un mot de passe",
+    "The password is incorrect, or the encrypted message is damaged.": "Le mot de passe est incorrect ou le message chiffré est endommagé.",
+    "Unable to create the secret link. Please try again.": "Impossible de créer le lien secret. Veuillez réessayer.",
+    "Unable to encrypt the secret. Please try again.": "Impossible de chiffrer le secret. Veuillez réessayer.",
+    "The secret is too long after encryption. Please shorten it.": "Le secret est trop long après le chiffrement. Veuillez le raccourcir."
 }

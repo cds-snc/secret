@@ -11,31 +11,38 @@
 <script language="javascript" type="text/javascript">
     const baseUrl = location.protocol + "//" + location.hostname;
     const lang = "{{.Lang}}";
-    const keySize = 256;
-    const ivSize = 128;
-    const iterations = 128;
-    const viewId = "{{.ViewId}}"
+    const viewId = "{{.ViewId}}";
+
+    // Keep these constants only while links created by the legacy CryptoJS
+    // implementation can still exist.
+    const LEGACY_KEY_SIZE = 256;
+    const LEGACY_ITERATIONS = 128;
+
+    const ENVELOPE_PREFIX = "emc:v2:";
+    const PBKDF2_ITERATIONS = 600000;
+    const MAX_SECRET_LENGTH = 64000;
+    const ENVELOPE_AAD = new TextEncoder().encode("encrypted-message:v2");
+
+    let retrievedSecret = "";
 
     const dateFormat = (ts) => {
         let a = new Date(ts * 1000);
-        let months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         let year = a.getFullYear();
         let month = `${a.getMonth() + 1}`.padStart(2, "0")
         let date = `${a.getDate()}`.padStart(2, "0")
         let hour = `${a.getHours()}`.padStart(2, "0")
         let min = `${a.getMinutes()}`.padStart(2, "0")
         let sec = `${a.getSeconds()}`.padStart(2, "0")
-        let time = year + '-' + month + '-' + date + ' ' + hour + ':' + min + ':' + sec;
-        return time;
+        return year + '-' + month + '-' + date + ' ' + hour + ':' + min + ':' + sec;
     }
 
-    const decrypt = (secret, password) => {
+    const decryptLegacy = (secret, password) => {
         let salt = CryptoJS.enc.Hex.parse(secret.substr(0, 32));
         let iv = CryptoJS.enc.Hex.parse(secret.substr(32, 32));
         let encryptedMessage = secret.substring(64);
         let key = CryptoJS.PBKDF2(password, salt, {
-            keySize: keySize / 32,
-            iterations: iterations,
+            keySize: LEGACY_KEY_SIZE / 32,
+            iterations: LEGACY_ITERATIONS,
         });
 
         let decryptedMessage = CryptoJS.AES.decrypt(encryptedMessage, key, {
@@ -46,24 +53,146 @@
         return decryptedMessage.toString(CryptoJS.enc.Utf8);
     };
 
-    const encrypt = (secret, password) => {
-        const salt = CryptoJS.lib.WordArray.random(128 / 8);
-        const key = CryptoJS.PBKDF2(password, salt, {
-            keySize: keySize / 32,
-            iterations: iterations,
-        });
+    const bytesToBase64Url = (bytes) => {
+        let binary = "";
+        const chunkSize = 0x8000;
 
-        let iv = CryptoJS.lib.WordArray.random(128 / 8);
+        for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+            binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+        }
 
-        let encrypted = CryptoJS.AES.encrypt(secret, key, {
-            iv: iv,
-            padding: CryptoJS.pad.Pkcs7,
-            mode: CryptoJS.mode.CBC,
-        });
+        return btoa(binary)
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/, "");
+    };
 
-        let encyptedMessage =
-            salt.toString() + iv.toString() + encrypted.toString();
-        return encyptedMessage;
+    const base64UrlToBytes = (value) => {
+        if (typeof value !== "string" || !/^[A-Za-z0-9_-]+$/.test(value)) {
+            throw new Error("Invalid encrypted message encoding");
+        }
+
+        const padding = "=".repeat((4 - value.length % 4) % 4);
+        const binary = atob(value.replace(/-/g, "+").replace(/_/g, "/") + padding);
+        return Uint8Array.from(binary, character => character.charCodeAt(0));
+    };
+
+    const deriveEncryptionKey = async (password, salt, usages) => {
+        const passwordKey = await crypto.subtle.importKey(
+            "raw",
+            new TextEncoder().encode(password),
+            "PBKDF2",
+            false,
+            ["deriveKey"],
+        );
+
+        return crypto.subtle.deriveKey(
+            {
+                name: "PBKDF2",
+                salt: salt,
+                iterations: PBKDF2_ITERATIONS,
+                hash: "SHA-256",
+            },
+            passwordKey,
+            { name: "AES-GCM", length: 256 },
+            false,
+            usages,
+        );
+    };
+
+    const encrypt = async (secret, password) => {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const nonce = crypto.getRandomValues(new Uint8Array(12));
+        const key = await deriveEncryptionKey(password, salt, ["encrypt"]);
+        const ciphertext = await crypto.subtle.encrypt(
+            {
+                name: "AES-GCM",
+                iv: nonce,
+                additionalData: ENVELOPE_AAD,
+            },
+            key,
+            new TextEncoder().encode(secret),
+        );
+
+        // Compact field names keep the envelope overhead low. Parameters are
+        // embedded so a later format version can safely choose new values.
+        const envelope = {
+            v: 2,
+            k: "PBKDF2-SHA-256",
+            i: PBKDF2_ITERATIONS,
+            s: bytesToBase64Url(salt),
+            c: "AES-256-GCM",
+            n: bytesToBase64Url(nonce),
+            d: bytesToBase64Url(new Uint8Array(ciphertext)),
+        };
+
+        return ENVELOPE_PREFIX + JSON.stringify(envelope);
+    };
+
+    const decryptV2 = async (secret, password) => {
+        const envelope = JSON.parse(secret.substring(ENVELOPE_PREFIX.length));
+
+        // Requiring this version's exact bounded parameters prevents a crafted
+        // message from requesting an excessive amount of browser work.
+        if (
+            envelope.v !== 2 ||
+            envelope.k !== "PBKDF2-SHA-256" ||
+            envelope.i !== PBKDF2_ITERATIONS ||
+            envelope.c !== "AES-256-GCM"
+        ) {
+            throw new Error("Unsupported encrypted message format");
+        }
+
+        const salt = base64UrlToBytes(envelope.s);
+        const nonce = base64UrlToBytes(envelope.n);
+        const ciphertext = base64UrlToBytes(envelope.d);
+
+        if (salt.length !== 16 || nonce.length !== 12 || ciphertext.length < 16) {
+            throw new Error("Invalid encrypted message parameters");
+        }
+
+        const key = await deriveEncryptionKey(password, salt, ["decrypt"]);
+        const plaintext = await crypto.subtle.decrypt(
+            {
+                name: "AES-GCM",
+                iv: nonce,
+                additionalData: ENVELOPE_AAD,
+            },
+            key,
+            ciphertext,
+        );
+
+        return new TextDecoder("utf-8", { fatal: true }).decode(plaintext);
+    };
+
+    const isV2Envelope = (secret) => secret.startsWith(ENVELOPE_PREFIX);
+
+    const looksLikeLegacyEnvelope = (secret) => {
+        return secret.length > 64 &&
+            /^[0-9a-fA-F]{64}/.test(secret) &&
+            /^[A-Za-z0-9+/]+={0,2}$/.test(secret.substring(64));
+    };
+
+    const decrypt = async (secret, password) => {
+        if (isV2Envelope(secret)) {
+            return decryptV2(secret, password);
+        }
+
+        const result = decryptLegacy(secret, password);
+        if (result === "") {
+            throw new Error("Legacy decryption failed");
+        }
+
+        return result;
+    };
+
+    const showGenerateError = (message) => {
+        $("#generate-error").text(message).removeClass("d-none");
+        $("#generate-btn").prop("disabled", false).removeClass("bg-opacity-20");
+    };
+
+    const hideGenerateError = () => {
+        $("#generate-error").addClass("d-none").text("");
     };
 
     const retrieveEncryption = (id) => {
@@ -72,9 +201,10 @@
             url: `/decrypt/${id}`,
             async: true,
             success: function (data) {
+                retrievedSecret = data.body;
                 $("#secret").val(data.body)
-                if (data.body.endsWith("=")) { // Base64 padding from encryption, not 100%
-                    $("#decrypt-warning").toggleClass("d-none");
+                if (isV2Envelope(data.body) || looksLikeLegacyEnvelope(data.body)) {
+                    $("#decrypt-warning").removeClass("d-none");
                 }
                 $("#confirm-div").toggleClass("d-none");
                 $("#secret-div").toggleClass("d-none");
@@ -101,6 +231,9 @@
                 $("#generate-div").toggleClass("d-none");
                 $("#link-div").toggleClass("d-none");
             },
+            error: function () {
+                showGenerateError("{{t `Unable to create the secret link. Please try again.` .Lang }}");
+            },
         });
     };
 
@@ -116,19 +249,23 @@
         });
     })
 
-    $("#decrypt-btn").click(() => {
-        const body = $("#secret").val()
+    $("#decrypt-btn").click(async () => {
         const password = $("#optional_pass").val();
+        $("#decrypt-error").addClass("d-none");
+        $("#decrypt-btn").prop("disabled", true).addClass("bg-opacity-20");
 
-        const result = decrypt(body, password)
-
-        if (result != "") {
-            $("#secret").val(result)
+        try {
+            const result = await decrypt(retrievedSecret || $("#secret").val(), password);
+            $("#secret").val(result);
+        } catch (error) {
+            $("#decrypt-error").removeClass("d-none");
+        } finally {
+            $("#decrypt-btn").prop("disabled", false).removeClass("bg-opacity-20");
         }
     })
 
-    $("#generate-btn").click(() => {
-
+    $("#generate-btn").click(async () => {
+        hideGenerateError();
         $("#generate-btn").prop('disabled', true)
         $('#generate-btn').addClass("bg-opacity-20")
 
@@ -139,15 +276,20 @@
 
         $("#expires-in").text(dateFormat(ttl))
 
-        let secret = "";
+        try {
+            const secret = password !== ""
+                ? await encrypt($("#secret").val(), password)
+                : $("#secret").val();
 
-        if (password != "") {
-            secret = encrypt($("#secret").val(), password);
-        } else {
-            secret = $("#secret").val();
+            if (new TextEncoder().encode(secret).length > MAX_SECRET_LENGTH) {
+                showGenerateError("{{t `The secret is too long after encryption. Please shorten it.` .Lang }}");
+                return;
+            }
+
+            submitEncryption(secret, ttl);
+        } catch (error) {
+            showGenerateError("{{t `Unable to encrypt the secret. Please try again.` .Lang }}");
         }
-
-        submitEncryption(secret, ttl);
     });
 
     $("#view-btn").click(() => {
