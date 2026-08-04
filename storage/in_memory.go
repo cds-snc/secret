@@ -9,11 +9,12 @@ import (
 )
 
 type pair struct {
-	Data       []byte
-	Key        []byte
-	TTL        int64
-	ClaimToken uuid.UUID
-	ClaimUntil time.Time
+	Data            []byte
+	Key             []byte
+	TTL             int64
+	ClaimToken      uuid.UUID
+	ClaimUntil      time.Time
+	ClientEncrypted *bool
 }
 
 // InMemoryStorageBackend is a storage backend that stores data in memory
@@ -70,12 +71,12 @@ func (b *InMemoryStorageBackend) size() int {
 }
 
 // Store stores data in the storage backend
-func (b *InMemoryStorageBackend) Store(data, key []byte, TTL int64) (uuid.UUID, error) {
+func (b *InMemoryStorageBackend) Store(data, key []byte, TTL int64, clientEncrypted bool) (uuid.UUID, error) {
 	b.m.Lock()
 	defer b.m.Unlock()
 
 	id := uuid.New()
-	b.data[id] = pair{Data: data, Key: key, TTL: TTL}
+	b.data[id] = pair{Data: data, Key: key, TTL: TTL, ClientEncrypted: &clientEncrypted}
 	return id, nil
 }
 
@@ -109,10 +110,20 @@ func (b *InMemoryStorageBackend) Claim(id uuid.UUID, lease time.Duration) (Claim
 	b.data[id] = secret
 
 	return ClaimedSecret{
-		Data:  append([]byte(nil), secret.Data...),
-		Key:   append([]byte(nil), secret.Key...),
-		Token: token,
+		Data:            append([]byte(nil), secret.Data...),
+		Key:             append([]byte(nil), secret.Key...),
+		Token:           token,
+		ClientEncrypted: cloneBool(secret.ClientEncrypted),
 	}, nil
+}
+
+func cloneBool(value *bool) *bool {
+	if value == nil {
+		return nil
+	}
+
+	copy := *value
+	return &copy
 }
 
 // Consume permanently deletes a secret if the caller still owns its claim.

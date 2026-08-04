@@ -34,7 +34,7 @@ func TestNullBackendStore(t *testing.T) {
 	backend := NullBackend{}
 	data := []byte("hello world")
 	key := []byte("key")
-	_, err := backend.Store(data, key, 0)
+	_, err := backend.Store(data, key, 0, false)
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}

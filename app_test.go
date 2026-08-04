@@ -99,10 +99,15 @@ func TestCreateAppRendersVersionedClientEncryption(t *testing.T) {
 		`const ENVELOPE_PREFIX = "emc:v2:"`,
 		`const PBKDF2_ITERATIONS = 600000`,
 		`name: "AES-GCM"`,
-		`const decryptLegacy`,
+		`client_encrypted: clientEncrypted`,
 	} {
 		if !strings.Contains(page, expected) {
 			t.Errorf("CreateApp() GET / did not render %q", expected)
+		}
+	}
+	for _, removed := range []string{"CryptoJS", "decryptLegacy", "looksLikeLegacyEnvelope"} {
+		if strings.Contains(page, removed) {
+			t.Errorf("CreateApp() GET / still rendered removed legacy code %q", removed)
 		}
 	}
 }
@@ -122,8 +127,12 @@ func TestCreateAppRendersLocalizedDecryptionError(t *testing.T) {
 		t.Fatalf("reading French view response: %v", err)
 	}
 
-	if !strings.Contains(string(body), "Le mot de passe est incorrect ou le message chiffré est endommagé.") {
+	page := string(body)
+	if !strings.Contains(page, "Le mot de passe est incorrect ou le message chiffré est endommagé.") {
 		t.Error("CreateApp() did not render the localized decryption error")
+	}
+	if !strings.Contains(page, "Ce message a été chiffré avec un mot de passe additionnel.") {
+		t.Error("CreateApp() did not render the localized encrypted-message notice")
 	}
 }
 
@@ -319,6 +328,9 @@ func TestCreateAppGetViewWithValidUUID(t *testing.T) {
 	if !strings.Contains(string(body), "confirm-div") {
 		t.Errorf("CreateApp() GET /en/view/00000000-0000-0000-0000-000000000000 = %v, want %v", string(body), "confirm-div")
 	}
+	if !strings.Contains(string(body), `id="decrypt-controls" class="d-none"`) {
+		t.Error("CreateApp() view page did not hide password controls by default")
+	}
 }
 
 func TestCreateAppGetDecryptWithIvalidUUID(t *testing.T) {
@@ -340,7 +352,7 @@ func TestCreateAppGetDecryptWithValidUUID(t *testing.T) {
 	backend := &storage.InMemoryStorageBackend{}
 	backend.Init(map[string]string{})
 
-	id, _ := backend.Store([]byte("test"), []byte("test"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("test"), []byte("test"), time.Now().Add(time.Hour).Unix(), false)
 
 	app := CreateApp(&encryption.NullEncryption{}, backend)
 
@@ -354,8 +366,9 @@ func TestCreateAppGetDecryptWithValidUUID(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 
 	//Check if the body contains the right JSON response
-	if !strings.Contains(string(body), `{"body":"test"}`) {
-		t.Errorf("CreateApp() GET /decrypt/valid-uuid = %v, want %v", string(body), `{"body":"test"}`)
+	if !strings.Contains(string(body), `"body":"test"`) ||
+		!strings.Contains(string(body), `"client_encrypted":false`) {
+		t.Errorf("CreateApp() GET /decrypt/valid-uuid returned unexpected body: %s", body)
 	}
 
 	// Check if the data was deleted from the storage backend
@@ -372,7 +385,7 @@ func TestCreateAppConcurrentDecryptHasExactlyOneWinner(t *testing.T) {
 	if err := backend.Init(map[string]string{}); err != nil {
 		t.Fatalf("Init() failed: %v", err)
 	}
-	id, err := backend.Store([]byte("test"), nil, time.Now().Add(time.Hour).Unix())
+	id, err := backend.Store([]byte("test"), nil, time.Now().Add(time.Hour).Unix(), false)
 	if err != nil {
 		t.Fatalf("Store() failed: %v", err)
 	}
@@ -421,7 +434,7 @@ func TestCreateAppReleasesClaimAfterDecryptionFailure(t *testing.T) {
 	if err := backend.Init(map[string]string{}); err != nil {
 		t.Fatalf("Init() failed: %v", err)
 	}
-	id, err := backend.Store([]byte("test"), nil, time.Now().Add(time.Hour).Unix())
+	id, err := backend.Store([]byte("test"), nil, time.Now().Add(time.Hour).Unix(), false)
 	if err != nil {
 		t.Fatalf("Store() failed: %v", err)
 	}
@@ -462,7 +475,7 @@ func TestCreateAppDeleteValidUUID(t *testing.T) {
 	backend := &storage.InMemoryStorageBackend{}
 	backend.Init(map[string]string{})
 
-	id, _ := backend.Store([]byte("test"), []byte("test"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("test"), []byte("test"), time.Now().Add(time.Hour).Unix(), false)
 
 	app := CreateApp(&encryption.NullEncryption{}, backend)
 
@@ -507,6 +520,99 @@ func TestCreateAppPostEncrypt(t *testing.T) {
 	//Check if the body contains a UUID id
 	if !strings.Contains(string(body), `"id":"`) {
 		t.Errorf("CreateApp() POST /encrypt = %v, want %v", string(body), `"id":"`)
+	}
+}
+
+func TestCreateAppDecryptUsesStoredClientEncryptionMarker(t *testing.T) {
+	t.Parallel()
+
+	const envelope = `emc:v2:{"v":2,"k":"PBKDF2-SHA-256","i":600000,"s":"AAAAAAAAAAAAAAAAAAAAAA","c":"AES-256-GCM","n":"AAAAAAAAAAAAAAAA","d":"AAAAAAAAAAAAAAAAAAAAAA"}`
+
+	tests := []struct {
+		name            string
+		body            string
+		clientEncrypted bool
+	}{
+		{
+			name:            "encrypted envelope",
+			body:            envelope,
+			clientEncrypted: true,
+		},
+		{
+			name:            "plaintext that resembles an envelope",
+			body:            envelope,
+			clientEncrypted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backend := &storage.InMemoryStorageBackend{}
+			if err := backend.Init(map[string]string{}); err != nil {
+				t.Fatalf("Init() failed: %v", err)
+			}
+			id, err := backend.Store([]byte(tt.body), nil, time.Now().Add(time.Hour).Unix(), tt.clientEncrypted)
+			if err != nil {
+				t.Fatalf("Store() failed: %v", err)
+			}
+
+			app := CreateApp(&encryption.NullEncryption{}, backend)
+			resp, err := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+			if err != nil {
+				t.Fatalf("GET /decrypt failed: %v", err)
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("reading response: %v", err)
+			}
+			want := fmt.Sprintf(`"client_encrypted":%t`, tt.clientEncrypted)
+			if !strings.Contains(string(body), want) {
+				t.Fatalf("GET /decrypt response = %s, want %s", body, want)
+			}
+		})
+	}
+}
+
+func TestClientEncryptionEnvelopeDetection(t *testing.T) {
+	t.Parallel()
+
+	const valid = `emc:v2:{"v":2,"k":"PBKDF2-SHA-256","i":600000,"s":"AAAAAAAAAAAAAAAAAAAAAA","c":"AES-256-GCM","n":"AAAAAAAAAAAAAAAA","d":"AAAAAAAAAAAAAAAAAAAAAA"}`
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{name: "valid current envelope", body: valid, want: true},
+		{name: "prefix only", body: CLIENT_ENCRYPTION_PREFIX, want: false},
+		{name: "wrong iterations", body: strings.Replace(valid, "600000", "128", 1), want: false},
+		{name: "unknown field", body: strings.Replace(valid, `"v":2`, `"v":2,"extra":true`, 1), want: false},
+		{name: "legacy CryptoJS payload", body: strings.Repeat("a", 64) + "Zm9v", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isClientEncryptionEnvelope(tt.body); got != tt.want {
+				t.Fatalf("isClientEncryptionEnvelope() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateAppRejectsInvalidMarkedClientEnvelope(t *testing.T) {
+	t.Parallel()
+
+	app := CreateApp(&encryption.NullEncryption{}, &storage.NullBackend{})
+	ttl := fmt.Sprint(time.Now().Add(time.Hour).Unix())
+	req := httptest.NewRequest(
+		"POST",
+		"/encrypt",
+		strings.NewReader(`{"body":"not-an-envelope","client_encrypted":true,"ttl":`+ttl+`}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	resp, _ := app.Test(req)
+
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("POST /encrypt status = %d, want %d", resp.StatusCode, fiber.StatusBadRequest)
 	}
 }
 

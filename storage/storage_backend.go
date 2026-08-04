@@ -13,9 +13,10 @@ var (
 )
 
 type ClaimedSecret struct {
-	Data  []byte
-	Key   []byte
-	Token uuid.UUID
+	Data            []byte
+	Key             []byte
+	Token           uuid.UUID
+	ClientEncrypted *bool
 }
 
 type StorageBackend interface {
@@ -24,5 +25,5 @@ type StorageBackend interface {
 	Delete(id uuid.UUID) error
 	Init(map[string]string) error
 	Release(id, token uuid.UUID) error
-	Store(data, key []byte, ttl int64) (uuid.UUID, error)
+	Store(data, key []byte, ttl int64, clientEncrypted bool) (uuid.UUID, error)
 }

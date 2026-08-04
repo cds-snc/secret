@@ -12,7 +12,7 @@ The application uses a combination of AES-256 encryption and a unique URL to hid
 
 Optionally, you can also encrypt the message on the client side before sending it to the server. This means that the server never sees the unencrypted message. This is useful if you don't trust the server or if you want to add an extra layer of security. However, the recipient will need to know the password you used to encrypt the message in order to decrypt it.
 
-New password-protected messages use a versioned `emc:v2` envelope. The browser derives an encryption key with PBKDF2-HMAC-SHA-256 and encrypts the message with AES-256-GCM through the Web Crypto API. The password and derived key never leave the browser. The client temporarily retains decryption support for links created with the previous CryptoJS AES-CBC format; that compatibility path can be removed after the maximum seven-day lifetime of legacy links has passed.
+Password-protected messages use a versioned `emc:v2` envelope. The browser derives an encryption key with PBKDF2-HMAC-SHA-256 and encrypts the message with AES-256-GCM through the Web Crypto API. The password and derived key never leave the browser. Each new record also stores a non-secret marker indicating whether browser encryption was selected, so the password controls only appear when they are needed. CryptoJS AES-CBC links are no longer supported.
 
 ## Backends
 
