@@ -164,7 +164,7 @@ resource "aws_wafv2_web_acl" "api" {
 
                 text_transformation {
                   priority = 0
-                  type     = "NONE"
+                  type     = "UPPERCASE"
                 }
               }
             }
