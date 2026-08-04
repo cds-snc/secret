@@ -26,7 +26,7 @@ variable "lambda_reserved_concurrent_executions" {
 
   validation {
     condition     = var.lambda_reserved_concurrent_executions >= 1
-    error_message = "lambda_reserved_concurrent_executions must be at least 1."
+    error_message = "Lambda reserved concurrent executions must be at least 1."
   }
 }
 
@@ -37,7 +37,7 @@ variable "encrypt_rate_limit" {
 
   validation {
     condition     = var.encrypt_rate_limit >= 10
-    error_message = "encrypt_rate_limit must be at least 10."
+    error_message = "The encrypt rate limit must be at least 10."
   }
 }
 
@@ -48,6 +48,6 @@ variable "decrypt_rate_limit" {
 
   validation {
     condition     = var.decrypt_rate_limit >= 10
-    error_message = "decrypt_rate_limit must be at least 10."
+    error_message = "The decrypt rate limit must be at least 10."
   }
 }
