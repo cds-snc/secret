@@ -175,8 +175,23 @@ func TestDynamoDBBackendClaimAndConsume(t *testing.T) {
 	if err := backend.Consume(id, claim.Token); err != nil {
 		t.Fatalf("DynamoDBBackend.Consume() failed: %s", err)
 	}
-	if _, err := backend.Claim(id, time.Minute); !errors.Is(err, ErrSecretUnavailable) {
-		t.Errorf("Claim() after Consume() = %v, want ErrSecretUnavailable", err)
+	if _, err := backend.Claim(id, time.Minute); !errors.Is(err, ErrSecretNotFound) {
+		t.Errorf("Claim() after Consume() = %v, want ErrSecretNotFound", err)
+	}
+}
+
+func TestDynamoDBBackendClaimMissingSecret(t *testing.T) {
+	t.Parallel()
+
+	backend := DynamoDBBackend{}
+	_ = backend.Init(map[string]string{
+		"endpoint":   getDynamoDBHost,
+		"region":     "ca-central-1",
+		"table_name": "secrets",
+	})
+
+	if _, err := backend.Claim(uuid.New(), time.Minute); !errors.Is(err, ErrSecretNotFound) {
+		t.Fatalf("Claim() missing secret = %v, want ErrSecretNotFound", err)
 	}
 }
 

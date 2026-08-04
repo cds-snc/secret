@@ -30,6 +30,8 @@ The application also comes with two storage backends out of the box:
 
 If you would like to build your own binaries with custom backends, take a look at the `cmd/app` and `cmd/lambda_app` directories for inspiration.
 
+The standalone container does not include the committed demo private key. Mount a generated key directory read-only at `/keys` when starting it (`make run` does this), or set `PUBLIC_KEY_PATH` and `PRIVATE_KEY_PATH` to externally mounted files. Startup fails if either key is unavailable. The Lambda image uses AWS KMS and contains no RSA keys.
+
 ## License
 
 This project is released under the terms of the MIT license. See [LICENSE](LICENSE) for more information or see https://opensource.org/licenses/MIT.

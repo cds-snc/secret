@@ -22,7 +22,7 @@ generate-keys:
 
 run:
 	@echo "Starting server..."
-	@docker run -p 3000:3000 app
+	@docker run --read-only -p 3000:3000 -v "$(PWD)/keys:/keys:ro" app
 
 test:
 	@echo "Running tests..."

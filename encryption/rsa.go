@@ -80,6 +80,10 @@ func (k *RsaKeyPair) Encrypt(data []byte) ([]byte, []byte, error) {
 }
 
 func (k *RsaKeyPair) Decrypt(data []byte, key []byte) ([]byte, error) {
+	if err := validateGCMCiphertext(data); err != nil {
+		return nil, err
+	}
+
 	// Decrypt the AES key with the private key
 	privateKeyBlock, _ := pem.Decode(k.privateKey)
 	privateKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes)
@@ -104,6 +108,9 @@ func (k *RsaKeyPair) Decrypt(data []byte, key []byte) ([]byte, error) {
 	}
 
 	nonceSize := gcm.NonceSize()
+	if len(data) < nonceSize+gcm.Overhead() {
+		return nil, ErrInvalidCiphertext
+	}
 
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)

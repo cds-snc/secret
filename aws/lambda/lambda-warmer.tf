@@ -25,14 +25,15 @@ EOF
 }
 
 resource "aws_lambda_function" "lambda-warmer" {
-  filename         = data.archive_file.lambda-warmer.output_path
-  function_name    = "${var.product_name}-${var.env}-lambda-warmer"
-  handler          = "lambda-warmer.handler"
-  memory_size      = 128
-  role             = aws_iam_role.lambda-iam-role.arn
-  runtime          = "python3.12"
-  source_code_hash = data.archive_file.lambda-warmer.output_base64sha256
-  timeout          = 60
+  filename                       = data.archive_file.lambda-warmer.output_path
+  function_name                  = "${var.product_name}-${var.env}-lambda-warmer"
+  handler                        = "lambda-warmer.handler"
+  memory_size                    = 128
+  role                           = aws_iam_role.lambda-iam-role.arn
+  runtime                        = "python3.12"
+  reserved_concurrent_executions = 1
+  source_code_hash               = data.archive_file.lambda-warmer.output_base64sha256
+  timeout                        = 60
 
   environment {
     variables = {

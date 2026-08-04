@@ -1,9 +1,21 @@
 package encryption
 
 import (
+	"errors"
 	"os"
 	"testing"
 )
+
+func TestAwsKmsEncryptionDecryptRejectsShortCiphertextBeforeKMS(t *testing.T) {
+	t.Parallel()
+
+	e := AwsKmsEncryption{}
+	for _, ciphertext := range [][]byte{nil, make([]byte, standardGCMNonceSize), make([]byte, standardGCMNonceSize+standardGCMTagSize-1)} {
+		if _, err := e.Decrypt(ciphertext, nil); !errors.Is(err, ErrInvalidCiphertext) {
+			t.Errorf("Decrypt() short ciphertext error = %v, want ErrInvalidCiphertext", err)
+		}
+	}
+}
 
 var getKmsHost string = func() string {
 	host := "http://local-kms:8080"
