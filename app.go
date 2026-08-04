@@ -113,7 +113,9 @@ Preferred-Languages: en, fr`
 		}, "base")
 	})
 
-	app.Get("/decrypt/:id", func(c *fiber.Ctx) error {
+	app.Post("/decrypt/:id", func(c *fiber.Ctx) error {
+		c.Set(fiber.HeaderCacheControl, "no-store, max-age=0")
+
 		//Convert the id to a UUID
 		id, err := uuid.Parse(c.Params("id"))
 		if err != nil {

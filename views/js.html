@@ -160,23 +160,22 @@
 
     const retrieveEncryption = (id) => {
         $.ajax({
-            type: "GET",
+            type: "POST",
             url: `/decrypt/${id}`,
             async: true,
             success: function (data) {
                 retrievedSecret = data.body;
+                $("#confirm-div").addClass("d-none");
                 if (data.client_encrypted) {
-                    $("#secret").val("");
-                    $("#decrypt-controls").removeClass("d-none");
+                    $("#decrypt-div").removeClass("d-none");
                 } else {
                     $("#secret").val(data.body);
+                    $("#secret-div").removeClass("d-none");
                 }
-                $("#confirm-div").toggleClass("d-none");
-                $("#secret-div").toggleClass("d-none");
             },
             error: function () {
-                $("#confirm-div").toggleClass("d-none");
-                $("#404-div").toggleClass("d-none");
+                $("#confirm-div").addClass("d-none");
+                $("#404-div").removeClass("d-none");
             }
         });
     }
@@ -230,7 +229,8 @@
             const result = await decryptV2(retrievedSecret, password);
             $("#secret").val(result);
             retrievedSecret = "";
-            $("#decrypt-controls").addClass("d-none");
+            $("#decrypt-div").addClass("d-none");
+            $("#secret-div").removeClass("d-none");
         } catch (error) {
             $("#decrypt-error").removeClass("d-none");
         } finally {
