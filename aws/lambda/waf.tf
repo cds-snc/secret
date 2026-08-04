@@ -102,7 +102,7 @@ resource "aws_wafv2_web_acl" "api" {
 
                 text_transformation {
                   priority = 0
-                  type     = "UPPERCASE"
+                  type     = "NONE"
                 }
               }
             }
@@ -164,7 +164,7 @@ resource "aws_wafv2_web_acl" "api" {
 
                 text_transformation {
                   priority = 0
-                  type     = "UPPERCASE"
+                  type     = "NONE"
                 }
               }
             }
