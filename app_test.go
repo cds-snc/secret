@@ -328,25 +328,28 @@ func TestCreateAppGetViewWithValidUUID(t *testing.T) {
 	if !strings.Contains(string(body), "confirm-div") {
 		t.Errorf("CreateApp() GET /en/view/00000000-0000-0000-0000-000000000000 = %v, want %v", string(body), "confirm-div")
 	}
-	if !strings.Contains(string(body), `id="decrypt-controls" class="d-none"`) {
+	if !strings.Contains(string(body), `class="d-none" id="decrypt-div"`) {
 		t.Error("CreateApp() view page did not hide password controls by default")
 	}
 }
 
-func TestCreateAppGetDecryptWithIvalidUUID(t *testing.T) {
+func TestCreateAppPostDecryptWithInvalidUUID(t *testing.T) {
 	t.Parallel()
 
 	app := CreateApp(&encryption.NullEncryption{}, &storage.NullBackend{})
 
-	req := httptest.NewRequest("GET", "/decrypt/invalid-uuid", nil)
+	req := httptest.NewRequest("POST", "/decrypt/invalid-uuid", nil)
 	resp, _ := app.Test(req)
 
 	if resp.StatusCode != fiber.StatusBadRequest {
-		t.Errorf("CreateApp() GET /decrypt/invalid-uuid = %v, want %v", resp.StatusCode, fiber.StatusBadRequest)
+		t.Errorf("CreateApp() POST /decrypt/invalid-uuid = %v, want %v", resp.StatusCode, fiber.StatusBadRequest)
+	}
+	if got := resp.Header.Get("Cache-Control"); got != "no-store, max-age=0" {
+		t.Errorf("Cache-Control = %q, want %q", got, "no-store, max-age=0")
 	}
 }
 
-func TestCreateAppGetDecryptWithValidUUID(t *testing.T) {
+func TestCreateAppPostDecryptWithValidUUID(t *testing.T) {
 	t.Parallel()
 
 	backend := &storage.InMemoryStorageBackend{}
@@ -356,11 +359,14 @@ func TestCreateAppGetDecryptWithValidUUID(t *testing.T) {
 
 	app := CreateApp(&encryption.NullEncryption{}, backend)
 
-	req := httptest.NewRequest("GET", "/decrypt/"+id.String(), nil)
+	req := httptest.NewRequest("POST", "/decrypt/"+id.String(), nil)
 	resp, _ := app.Test(req)
 
 	if resp.StatusCode != fiber.StatusOK {
-		t.Errorf("CreateApp() GET /decrypt/valid-uuid = %v, want %v", resp.StatusCode, fiber.StatusOK)
+		t.Errorf("CreateApp() POST /decrypt/valid-uuid = %v, want %v", resp.StatusCode, fiber.StatusOK)
+	}
+	if got := resp.Header.Get("Cache-Control"); got != "no-store, max-age=0" {
+		t.Errorf("Cache-Control = %q, want %q", got, "no-store, max-age=0")
 	}
 
 	body, _ := io.ReadAll(resp.Body)
@@ -368,13 +374,43 @@ func TestCreateAppGetDecryptWithValidUUID(t *testing.T) {
 	//Check if the body contains the right JSON response
 	if !strings.Contains(string(body), `"body":"test"`) ||
 		!strings.Contains(string(body), `"client_encrypted":false`) {
-		t.Errorf("CreateApp() GET /decrypt/valid-uuid returned unexpected body: %s", body)
+		t.Errorf("CreateApp() POST /decrypt/valid-uuid returned unexpected body: %s", body)
 	}
 
 	// Check if the data was deleted from the storage backend
 	_, err := backend.Claim(id, time.Minute)
 	if !errors.Is(err, storage.ErrSecretUnavailable) {
 		t.Errorf("Claim() after decrypt = %v, want ErrSecretUnavailable", err)
+	}
+}
+
+func TestCreateAppGetDoesNotRetrieveSecret(t *testing.T) {
+	t.Parallel()
+
+	backend := &storage.InMemoryStorageBackend{}
+	if err := backend.Init(map[string]string{}); err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+	id, err := backend.Store([]byte("test"), nil, time.Now().Add(time.Hour).Unix(), false)
+	if err != nil {
+		t.Fatalf("Store() failed: %v", err)
+	}
+
+	app := CreateApp(&encryption.NullEncryption{}, backend)
+	resp, err := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+	if err != nil {
+		t.Fatalf("GET /decrypt returned an error: %v", err)
+	}
+	if resp.StatusCode == fiber.StatusOK {
+		t.Fatal("GET /decrypt unexpectedly retrieved the secret")
+	}
+
+	claim, err := backend.Claim(id, time.Minute)
+	if err != nil {
+		t.Fatalf("secret was consumed by GET /decrypt: %v", err)
+	}
+	if err := backend.Release(id, claim.Token); err != nil {
+		t.Fatalf("Release() failed: %v", err)
 	}
 }
 
@@ -402,10 +438,10 @@ func TestCreateAppConcurrentDecryptHasExactlyOneWinner(t *testing.T) {
 			defer wg.Done()
 			<-start
 
-			req := httptest.NewRequest("GET", "/decrypt/"+id.String(), nil)
+			req := httptest.NewRequest("POST", "/decrypt/"+id.String(), nil)
 			resp, requestErr := app.Test(req)
 			if requestErr != nil {
-				t.Errorf("GET /decrypt returned an error: %v", requestErr)
+				t.Errorf("POST /decrypt returned an error: %v", requestErr)
 				return
 			}
 			statuses <- resp.StatusCode
@@ -440,17 +476,17 @@ func TestCreateAppReleasesClaimAfterDecryptionFailure(t *testing.T) {
 	}
 
 	app := CreateApp(&failOnceEncryption{}, backend)
-	first, _ := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+	first, _ := app.Test(httptest.NewRequest("POST", "/decrypt/"+id.String(), nil))
 	if first.StatusCode != fiber.StatusBadRequest {
 		t.Fatalf("first decrypt status = %d, want %d", first.StatusCode, fiber.StatusBadRequest)
 	}
 
-	second, _ := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+	second, _ := app.Test(httptest.NewRequest("POST", "/decrypt/"+id.String(), nil))
 	if second.StatusCode != fiber.StatusOK {
 		t.Fatalf("retry decrypt status = %d, want %d", second.StatusCode, fiber.StatusOK)
 	}
 
-	third, _ := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+	third, _ := app.Test(httptest.NewRequest("POST", "/decrypt/"+id.String(), nil))
 	if third.StatusCode != fiber.StatusBadRequest {
 		t.Fatalf("decrypt after successful retry status = %d, want %d", third.StatusCode, fiber.StatusBadRequest)
 	}
@@ -557,9 +593,9 @@ func TestCreateAppDecryptUsesStoredClientEncryptionMarker(t *testing.T) {
 			}
 
 			app := CreateApp(&encryption.NullEncryption{}, backend)
-			resp, err := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+			resp, err := app.Test(httptest.NewRequest("POST", "/decrypt/"+id.String(), nil))
 			if err != nil {
-				t.Fatalf("GET /decrypt failed: %v", err)
+				t.Fatalf("POST /decrypt failed: %v", err)
 			}
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
@@ -567,7 +603,7 @@ func TestCreateAppDecryptUsesStoredClientEncryptionMarker(t *testing.T) {
 			}
 			want := fmt.Sprintf(`"client_encrypted":%t`, tt.clientEncrypted)
 			if !strings.Contains(string(body), want) {
-				t.Fatalf("GET /decrypt response = %s, want %s", body, want)
+				t.Fatalf("POST /decrypt response = %s, want %s", body, want)
 			}
 		})
 	}
