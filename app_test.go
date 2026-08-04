@@ -57,6 +57,54 @@ func TestCreateAppGetHome(t *testing.T) {
 	}
 }
 
+func TestCreateAppRendersVersionedClientEncryption(t *testing.T) {
+	t.Parallel()
+
+	app := CreateApp(&encryption.NullEncryption{}, &storage.NullBackend{})
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("CreateApp() GET / returned an error: %v", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("reading GET / response: %v", err)
+	}
+
+	page := string(body)
+	for _, expected := range []string{
+		`const ENVELOPE_PREFIX = "emc:v2:"`,
+		`const PBKDF2_ITERATIONS = 600000`,
+		`name: "AES-GCM"`,
+		`const decryptLegacy`,
+	} {
+		if !strings.Contains(page, expected) {
+			t.Errorf("CreateApp() GET / did not render %q", expected)
+		}
+	}
+}
+
+func TestCreateAppRendersLocalizedDecryptionError(t *testing.T) {
+	t.Parallel()
+
+	app := CreateApp(&encryption.NullEncryption{}, &storage.NullBackend{})
+	req := httptest.NewRequest("GET", "/fr/view/00000000-0000-0000-0000-000000000000", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("CreateApp() GET French view returned an error: %v", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("reading French view response: %v", err)
+	}
+
+	if !strings.Contains(string(body), "Le mot de passe est incorrect ou le message chiffré est endommagé.") {
+		t.Error("CreateApp() did not render the localized decryption error")
+	}
+}
+
 func TestCreateAppGetHomeWithOptionalAdditionalPassword(t *testing.T) {
 	t.Parallel()
 
@@ -142,6 +190,10 @@ func TestCreateAppGetHomeWithRequiredAdditionalPasswordInFrench(t *testing.T) {
 
 	if !strings.Contains(bodyString, `error-message="Entrez un mot de passe additionnel"`) {
 		t.Errorf("CreateApp() GET /fr = %v, want %v", bodyString, `error-message="Entrez un mot de passe additionnel"`)
+	}
+
+	if !strings.Contains(bodyString, `const requireAdditionalPassword = true;`) {
+		t.Errorf("CreateApp() GET /fr = %v, want %v", bodyString, `const requireAdditionalPassword = true;`)
 	}
 }
 

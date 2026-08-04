@@ -12,6 +12,8 @@ The application uses a combination of AES-256 encryption and a unique URL to hid
 
 Optionally, you can also encrypt the message on the client side before sending it to the server. This means that the server never sees the unencrypted message. This is useful if you don't trust the server or if you want to add an extra layer of security. However, the recipient will need to know the password you used to encrypt the message in order to decrypt it.
 
+New password-protected messages use a versioned `emc:v2` envelope. The browser derives an encryption key with PBKDF2-HMAC-SHA-256 and encrypts the message with AES-256-GCM through the Web Crypto API. The password and derived key never leave the browser. The client temporarily retains decryption support for links created with the previous CryptoJS AES-CBC format; that compatibility path can be removed after the maximum seven-day lifetime of legacy links has passed.
+
 ## Backends
 
 The application allows you to specify both an encryption backend as well as a storage backend. This allows you to run the application across multiple cloud service providers or even on your own hardware. The interfaces for the encryption and storage backends are defined in the `encryption/encryption_backend.go` and `storage/storage_backend.go` files respectively.

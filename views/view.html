@@ -34,4 +34,6 @@
     <gcds-button id="decrypt-btn">
         {{ t `Decrypt message with password` .Lang}}
     </gcds-button>
-</gcds-container>
+    <p id="decrypt-error" class="d-none text-danger mt-300" role="alert">
+        {{ t `The password is incorrect, or the encrypted message is damaged.` .Lang}}
+    </p></gcds-container>

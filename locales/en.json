@@ -31,5 +31,9 @@
     "Either the link is wrong or the secret has expired.": "",
     "This message is for you:": "",
     "It looks like your message has been encrypted with an additional password. Please enter it below to fully decrypt the message.": "",
-    "Decrypt message with password": ""
+    "Decrypt message with password": "",
+    "The password is incorrect, or the encrypted message is damaged.": "",
+    "Unable to create the secret link. Please try again.": "",
+    "Unable to encrypt the secret. Please try again.": "",
+    "The secret is too long after encryption. Please shorten it.": ""
 }
