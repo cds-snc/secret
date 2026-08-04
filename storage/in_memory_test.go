@@ -26,7 +26,7 @@ func TestDelete(t *testing.T) {
 	t.Parallel()
 
 	backend := newInMemoryBackend(t)
-	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix(), false)
 	if err := backend.Delete(id); err != nil {
 		t.Fatalf("Delete() failed: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestPurge(t *testing.T) {
 	t.Parallel()
 
 	backend := newInMemoryBackend(t)
-	_, _ = backend.Store([]byte("data"), []byte("key"), time.Now().Add(-time.Hour).Unix())
+	_, _ = backend.Store([]byte("data"), []byte("key"), time.Now().Add(-time.Hour).Unix(), false)
 	if err := backend.purge(); err != nil {
 		t.Fatalf("purge() failed: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestStore(t *testing.T) {
 	t.Parallel()
 
 	backend := newInMemoryBackend(t)
-	id, err := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, err := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix(), false)
 	if err != nil {
 		t.Fatalf("Store() failed: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestClaimAndConsume(t *testing.T) {
 	t.Parallel()
 
 	backend := newInMemoryBackend(t)
-	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix(), true)
 
 	claim, err := backend.Claim(id, testClaimLease)
 	if err != nil {
@@ -83,6 +83,9 @@ func TestClaimAndConsume(t *testing.T) {
 	}
 	if string(claim.Data) != "data" || string(claim.Key) != "key" || claim.Token == uuid.Nil {
 		t.Fatalf("Claim() returned an invalid claim: %#v", claim)
+	}
+	if claim.ClientEncrypted == nil || !*claim.ClientEncrypted {
+		t.Fatalf("Claim() did not preserve client encryption metadata: %#v", claim)
 	}
 
 	if err := backend.Consume(id, claim.Token); err != nil {
@@ -97,7 +100,7 @@ func TestClaimExpiredOrMissingSecret(t *testing.T) {
 	t.Parallel()
 
 	backend := newInMemoryBackend(t)
-	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(-time.Hour).Unix())
+	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(-time.Hour).Unix(), false)
 
 	for _, testID := range []uuid.UUID{id, uuid.New()} {
 		if _, err := backend.Claim(testID, testClaimLease); !errors.Is(err, ErrSecretUnavailable) {
@@ -110,7 +113,7 @@ func TestConcurrentClaimsHaveExactlyOneWinner(t *testing.T) {
 	t.Parallel()
 
 	backend := newInMemoryBackend(t)
-	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix(), false)
 
 	const contenders = 32
 	start := make(chan struct{})
@@ -152,7 +155,7 @@ func TestReleaseAllowsImmediateRetry(t *testing.T) {
 	t.Parallel()
 
 	backend := newInMemoryBackend(t)
-	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix(), false)
 
 	first, err := backend.Claim(id, testClaimLease)
 	if err != nil {
@@ -175,7 +178,7 @@ func TestExpiredClaimCanBeReclaimed(t *testing.T) {
 	t.Parallel()
 
 	backend := newInMemoryBackend(t)
-	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(time.Hour).Unix(), false)
 
 	first, err := backend.Claim(id, 10*time.Millisecond)
 	if err != nil {

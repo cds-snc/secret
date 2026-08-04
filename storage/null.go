@@ -26,7 +26,7 @@ func (b *NullBackend) Init(map[string]string) error {
 	return nil
 }
 
-func (b *NullBackend) Store(data, key []byte, ttl int64) (uuid.UUID, error) {
+func (b *NullBackend) Store(data, key []byte, ttl int64, clientEncrypted bool) (uuid.UUID, error) {
 	return uuid.New(), nil
 }
 

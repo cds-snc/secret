@@ -15,12 +15,13 @@ import (
 )
 
 type Record struct {
-	ID         string `dynamodbav:"id"`
-	Data       []byte `dynamodbav:"data"`
-	Key        []byte `dynamodbav:"key"`
-	TTL        int64  `dynamodbav:"ttl"`
-	ClaimToken string `dynamodbav:"claim_token,omitempty"`
-	ClaimUntil int64  `dynamodbav:"claim_until,omitempty"`
+	ID              string `dynamodbav:"id"`
+	Data            []byte `dynamodbav:"data"`
+	Key             []byte `dynamodbav:"key"`
+	TTL             int64  `dynamodbav:"ttl"`
+	ClaimToken      string `dynamodbav:"claim_token,omitempty"`
+	ClaimUntil      int64  `dynamodbav:"claim_until,omitempty"`
+	ClientEncrypted *bool  `dynamodbav:"client_encrypted,omitempty"`
 }
 
 type DynamoDBBackend struct {
@@ -96,14 +97,15 @@ func (b *DynamoDBBackend) Init(c map[string]string) error {
 	return nil
 }
 
-func (b *DynamoDBBackend) Store(data, key []byte, ttl int64) (uuid.UUID, error) {
+func (b *DynamoDBBackend) Store(data, key []byte, ttl int64, clientEncrypted bool) (uuid.UUID, error) {
 	id := uuid.New()
 
 	record := Record{
-		ID:   id.String(),
-		Data: data,
-		Key:  key,
-		TTL:  ttl,
+		ID:              id.String(),
+		Data:            data,
+		Key:             key,
+		TTL:             ttl,
+		ClientEncrypted: &clientEncrypted,
 	}
 
 	av, err := attributevalue.MarshalMap(record)
@@ -172,7 +174,12 @@ func (b *DynamoDBBackend) Claim(id uuid.UUID, lease time.Duration) (ClaimedSecre
 		return ClaimedSecret{}, err
 	}
 
-	return ClaimedSecret{Data: r.Data, Key: r.Key, Token: token}, nil
+	return ClaimedSecret{
+		Data:            r.Data,
+		Key:             r.Key,
+		Token:           token,
+		ClientEncrypted: r.ClientEncrypted,
+	}, nil
 }
 
 // Consume permanently deletes a secret if the caller still owns an active claim.

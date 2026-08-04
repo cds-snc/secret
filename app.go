@@ -1,10 +1,13 @@
 package app
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,6 +21,8 @@ import (
 
 const MAX_AGE_IN_DAYS = 7
 const MAX_SECRET_LENGTH = 64_000
+const CLIENT_ENCRYPTION_PREFIX = "emc:v2:"
+const CLIENT_ENCRYPTION_ITERATIONS = 600_000
 
 // Keep the claim lease longer than the deployed Lambda's 60-second timeout so
 // a request cannot lose its claim while it is still able to return a response.
@@ -148,8 +153,14 @@ Preferred-Languages: en, fr`
 		claimActive = false
 
 		// Return a JSON response with the decrypted data
+		clientEncrypted := isClientEncryptionEnvelope(string(decryptedData))
+		if claimedSecret.ClientEncrypted != nil {
+			clientEncrypted = *claimedSecret.ClientEncrypted
+		}
+
 		return c.JSON(fiber.Map{
-			"body": string(decryptedData),
+			"body":             string(decryptedData),
+			"client_encrypted": clientEncrypted,
 		})
 	})
 
@@ -178,8 +189,9 @@ Preferred-Languages: en, fr`
 
 		// Parse the JSON body from the request
 		type RequestBody struct {
-			Body string `json:"body"`
-			TTL  int64  `json:"ttl"`
+			Body            string `json:"body"`
+			TTL             int64  `json:"ttl"`
+			ClientEncrypted bool   `json:"client_encrypted"`
 		}
 
 		var body RequestBody
@@ -190,7 +202,7 @@ Preferred-Languages: en, fr`
 		}
 
 		// Encrypt and save the data
-		id, err := encryptAndSave(body.Body, body.TTL, encryption, storage)
+		id, err := encryptAndSave(body.Body, body.TTL, body.ClientEncrypted, encryption, storage)
 
 		if err != nil {
 			log.Error(err)
@@ -206,7 +218,7 @@ Preferred-Languages: en, fr`
 	return app
 }
 
-func encryptAndSave(body string, ttl int64, encryption encryption.EncryptionBackend, storage storage.StorageBackend) (string, error) {
+func encryptAndSave(body string, ttl int64, clientEncrypted bool, encryption encryption.EncryptionBackend, storage storage.StorageBackend) (string, error) {
 	// Check the TTL is in range
 	currentTimestamp := time.Now().Unix()
 	if ttl < currentTimestamp || ttl > currentTimestamp+(MAX_AGE_IN_DAYS*24*60*60) {
@@ -219,6 +231,10 @@ func encryptAndSave(body string, ttl int64, encryption encryption.EncryptionBack
 		log.Error("Secret too long")
 		return "", fmt.Errorf("secret too long")
 	}
+	if clientEncrypted && !isClientEncryptionEnvelope(body) {
+		log.Error("Invalid client encryption envelope")
+		return "", fmt.Errorf("invalid client encryption envelope")
+	}
 
 	// Encrypt the data
 	encryptedData, key, err := encryption.Encrypt([]byte(body))
@@ -227,12 +243,61 @@ func encryptAndSave(body string, ttl int64, encryption encryption.EncryptionBack
 	}
 
 	// Store the encrypted data
-	id, err := storage.Store(encryptedData, key, ttl)
+	id, err := storage.Store(encryptedData, key, ttl, clientEncrypted)
 	if err != nil {
 		return "", err
 	}
 
 	return id.String(), nil
+}
+
+type clientEncryptionEnvelope struct {
+	Version    int    `json:"v"`
+	KDF        string `json:"k"`
+	Iterations int    `json:"i"`
+	Salt       string `json:"s"`
+	Cipher     string `json:"c"`
+	Nonce      string `json:"n"`
+	Data       string `json:"d"`
+}
+
+// isClientEncryptionEnvelope strictly recognizes the current browser format.
+// New secrets carry an explicit storage marker; this parser is also the
+// temporary fallback for Web Crypto links created before that marker existed.
+func isClientEncryptionEnvelope(body string) bool {
+	if !strings.HasPrefix(body, CLIENT_ENCRYPTION_PREFIX) {
+		return false
+	}
+
+	decoder := json.NewDecoder(strings.NewReader(strings.TrimPrefix(body, CLIENT_ENCRYPTION_PREFIX)))
+	decoder.DisallowUnknownFields()
+
+	var envelope clientEncryptionEnvelope
+	if err := decoder.Decode(&envelope); err != nil {
+		return false
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return false
+	}
+
+	if envelope.Version != 2 ||
+		envelope.KDF != "PBKDF2-SHA-256" ||
+		envelope.Iterations != CLIENT_ENCRYPTION_ITERATIONS ||
+		envelope.Cipher != "AES-256-GCM" {
+		return false
+	}
+
+	salt, err := base64.RawURLEncoding.DecodeString(envelope.Salt)
+	if err != nil || len(salt) != 16 {
+		return false
+	}
+	nonce, err := base64.RawURLEncoding.DecodeString(envelope.Nonce)
+	if err != nil || len(nonce) != 12 {
+		return false
+	}
+	ciphertext, err := base64.RawURLEncoding.DecodeString(envelope.Data)
+	return err == nil && len(ciphertext) >= 16
 }
 
 func getOtherLanguage(language string) string {

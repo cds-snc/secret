@@ -127,7 +127,7 @@ func TestDynamoDBBackendStore(t *testing.T) {
 		"table_name": "secrets",
 	})
 
-	id, err := backend.Store([]byte("test"), []byte("test"), 1000)
+	id, err := backend.Store([]byte("test"), []byte("test"), 1000, false)
 
 	if err != nil {
 		t.Errorf("DynamoDBBackend.Store() failed: %s", err)
@@ -149,7 +149,7 @@ func TestDynamoDBBackendClaimAndConsume(t *testing.T) {
 		"table_name": "secrets",
 	})
 
-	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(time.Hour).Unix(), true)
 
 	if err != nil {
 		t.Errorf("DynamoDBBackend.Store() failed: %s", err)
@@ -167,6 +167,9 @@ func TestDynamoDBBackendClaimAndConsume(t *testing.T) {
 
 	if string(claim.Key) != "key" {
 		t.Errorf("DynamoDBBackend.Claim() returned the wrong key")
+	}
+	if claim.ClientEncrypted == nil || !*claim.ClientEncrypted {
+		t.Errorf("DynamoDBBackend.Claim() did not preserve client encryption metadata")
 	}
 
 	if err := backend.Consume(id, claim.Token); err != nil {
@@ -188,7 +191,7 @@ func TestDynamoDBBackendClaimWithTTLInPast(t *testing.T) {
 		"table_name": "secrets",
 	})
 
-	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(-time.Hour).Unix())
+	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(-time.Hour).Unix(), false)
 
 	if err != nil {
 		t.Errorf("DynamoDBBackend.Store() failed: %s", err)
@@ -210,7 +213,7 @@ func TestDynamoDBBackendConcurrentClaimsHaveExactlyOneWinner(t *testing.T) {
 		"region":     "ca-central-1",
 		"table_name": "secrets",
 	})
-	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(time.Hour).Unix(), false)
 	if err != nil {
 		t.Fatalf("Store() failed: %v", err)
 	}
@@ -260,7 +263,7 @@ func TestDynamoDBBackendReleaseAllowsRetry(t *testing.T) {
 		"region":     "ca-central-1",
 		"table_name": "secrets",
 	})
-	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(time.Hour).Unix())
+	id, err := backend.Store([]byte("test"), []byte("key"), time.Now().Add(time.Hour).Unix(), false)
 	if err != nil {
 		t.Fatalf("Store() failed: %v", err)
 	}
