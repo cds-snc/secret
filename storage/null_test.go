@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -38,13 +40,27 @@ func TestNullBackendStore(t *testing.T) {
 	}
 }
 
-func TestNullBackendRetrieve(t *testing.T) {
+func TestNullBackendClaim(t *testing.T) {
 	t.Parallel()
 
 	backend := NullBackend{}
 	id := uuid.New()
-	_, _, err := backend.Retrieve(id)
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
+	_, err := backend.Claim(id, time.Minute)
+	if !errors.Is(err, ErrSecretUnavailable) {
+		t.Errorf("Claim() = %v, want ErrSecretUnavailable", err)
+	}
+}
+
+func TestNullBackendClaimLifecycle(t *testing.T) {
+	t.Parallel()
+
+	backend := NullBackend{}
+	id := uuid.New()
+	token := uuid.New()
+	if err := backend.Consume(id, token); err != nil {
+		t.Errorf("Consume() failed: %v", err)
+	}
+	if err := backend.Release(id, token); err != nil {
+		t.Errorf("Release() failed: %v", err)
 	}
 }

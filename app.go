@@ -19,6 +19,10 @@ import (
 const MAX_AGE_IN_DAYS = 7
 const MAX_SECRET_LENGTH = 64_000
 
+// Keep the claim lease longer than the deployed Lambda's 60-second timeout so
+// a request cannot lose its claim while it is still able to return a response.
+const SECRET_CLAIM_LEASE = 90 * time.Second
+
 type AppConfig struct {
 	RequireAdditionalPassword bool
 }
@@ -112,26 +116,36 @@ Preferred-Languages: en, fr`
 			return c.Status(fiber.StatusBadRequest).SendString("Invalid UUID")
 		}
 
-		//Get the encrypted data from the storage backend
-		encryptedData, key, err := storage.Retrieve(id)
+		// Atomically reserve the secret so concurrent requests cannot both decrypt it.
+		claimedSecret, err := storage.Claim(id, SECRET_CLAIM_LEASE)
 		if err != nil {
 			log.Warn(err)
 			return c.Status(fiber.StatusBadRequest).SendString("Invalid UUID")
 		}
 
+		claimActive := true
+		defer func() {
+			if claimActive {
+				if releaseErr := storage.Release(id, claimedSecret.Token); releaseErr != nil {
+					log.Error(releaseErr)
+				}
+			}
+		}()
+
 		//Decrypt the data
-		decryptedData, err := encryption.Decrypt(encryptedData, key)
+		decryptedData, err := encryption.Decrypt(claimedSecret.Data, claimedSecret.Key)
 		if err != nil {
 			log.Error(err)
 			return c.Status(fiber.StatusBadRequest).SendString("Invalid UUID")
 		}
 
-		//Delete the data from the storage backend
-		err = storage.Delete(id)
+		// Consume only the claim owned by this request before revealing the secret.
+		err = storage.Consume(id, claimedSecret.Token)
 		if err != nil {
 			log.Error(err)
 			return c.Status(fiber.StatusBadRequest).SendString("Invalid UUID")
 		}
+		claimActive = false
 
 		// Return a JSON response with the decrypted data
 		return c.JSON(fiber.Map{
