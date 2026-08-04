@@ -1,11 +1,14 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,6 +16,25 @@ import (
 	"github.com/cds-snc/secret/storage"
 	"github.com/gofiber/fiber/v2"
 )
+
+type failOnceEncryption struct {
+	failed atomic.Bool
+}
+
+func (e *failOnceEncryption) Init(map[string]string) error {
+	return nil
+}
+
+func (e *failOnceEncryption) Encrypt(plaintext []byte) ([]byte, []byte, error) {
+	return plaintext, nil, nil
+}
+
+func (e *failOnceEncryption) Decrypt(ciphertext, _ []byte) ([]byte, error) {
+	if e.failed.CompareAndSwap(false, true) {
+		return nil, fmt.Errorf("transient decryption failure")
+	}
+	return ciphertext, nil
+}
 
 func TestCreateApp(t *testing.T) {
 	t.Parallel()
@@ -315,12 +337,12 @@ func TestCreateAppGetDecryptWithIvalidUUID(t *testing.T) {
 func TestCreateAppGetDecryptWithValidUUID(t *testing.T) {
 	t.Parallel()
 
-	storage := &storage.InMemoryStorageBackend{}
-	storage.Init(map[string]string{})
+	backend := &storage.InMemoryStorageBackend{}
+	backend.Init(map[string]string{})
 
-	id, _ := storage.Store([]byte("test"), []byte("test"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("test"), []byte("test"), time.Now().Add(time.Hour).Unix())
 
-	app := CreateApp(&encryption.NullEncryption{}, storage)
+	app := CreateApp(&encryption.NullEncryption{}, backend)
 
 	req := httptest.NewRequest("GET", "/decrypt/"+id.String(), nil)
 	resp, _ := app.Test(req)
@@ -337,9 +359,87 @@ func TestCreateAppGetDecryptWithValidUUID(t *testing.T) {
 	}
 
 	// Check if the data was deleted from the storage backend
-	_, _, err := storage.Retrieve(id)
-	if err == nil {
-		t.Errorf("CreateApp() GET /decrypt/valid-uuid = %v, want %v", err, "error")
+	_, err := backend.Claim(id, time.Minute)
+	if !errors.Is(err, storage.ErrSecretUnavailable) {
+		t.Errorf("Claim() after decrypt = %v, want ErrSecretUnavailable", err)
+	}
+}
+
+func TestCreateAppConcurrentDecryptHasExactlyOneWinner(t *testing.T) {
+	t.Parallel()
+
+	backend := &storage.InMemoryStorageBackend{}
+	if err := backend.Init(map[string]string{}); err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+	id, err := backend.Store([]byte("test"), nil, time.Now().Add(time.Hour).Unix())
+	if err != nil {
+		t.Fatalf("Store() failed: %v", err)
+	}
+
+	app := CreateApp(&encryption.NullEncryption{}, backend)
+	const contenders = 32
+	start := make(chan struct{})
+	statuses := make(chan int, contenders)
+	var wg sync.WaitGroup
+
+	for range contenders {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+
+			req := httptest.NewRequest("GET", "/decrypt/"+id.String(), nil)
+			resp, requestErr := app.Test(req)
+			if requestErr != nil {
+				t.Errorf("GET /decrypt returned an error: %v", requestErr)
+				return
+			}
+			statuses <- resp.StatusCode
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(statuses)
+
+	successes := 0
+	for status := range statuses {
+		if status == fiber.StatusOK {
+			successes++
+		}
+	}
+	if successes != 1 {
+		t.Fatalf("successful concurrent decryptions = %d, want exactly 1", successes)
+	}
+}
+
+func TestCreateAppReleasesClaimAfterDecryptionFailure(t *testing.T) {
+	t.Parallel()
+
+	backend := &storage.InMemoryStorageBackend{}
+	if err := backend.Init(map[string]string{}); err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+	id, err := backend.Store([]byte("test"), nil, time.Now().Add(time.Hour).Unix())
+	if err != nil {
+		t.Fatalf("Store() failed: %v", err)
+	}
+
+	app := CreateApp(&failOnceEncryption{}, backend)
+	first, _ := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+	if first.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("first decrypt status = %d, want %d", first.StatusCode, fiber.StatusBadRequest)
+	}
+
+	second, _ := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+	if second.StatusCode != fiber.StatusOK {
+		t.Fatalf("retry decrypt status = %d, want %d", second.StatusCode, fiber.StatusOK)
+	}
+
+	third, _ := app.Test(httptest.NewRequest("GET", "/decrypt/"+id.String(), nil))
+	if third.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("decrypt after successful retry status = %d, want %d", third.StatusCode, fiber.StatusBadRequest)
 	}
 }
 
@@ -359,12 +459,12 @@ func TestCreateAppDeleteInvalidUUID(t *testing.T) {
 func TestCreateAppDeleteValidUUID(t *testing.T) {
 	t.Parallel()
 
-	storage := &storage.InMemoryStorageBackend{}
-	storage.Init(map[string]string{})
+	backend := &storage.InMemoryStorageBackend{}
+	backend.Init(map[string]string{})
 
-	id, _ := storage.Store([]byte("test"), []byte("test"), time.Now().Add(time.Hour).Unix())
+	id, _ := backend.Store([]byte("test"), []byte("test"), time.Now().Add(time.Hour).Unix())
 
-	app := CreateApp(&encryption.NullEncryption{}, storage)
+	app := CreateApp(&encryption.NullEncryption{}, backend)
 
 	req := httptest.NewRequest("DELETE", "/delete/"+id.String(), nil)
 	resp, _ := app.Test(req)
@@ -381,9 +481,9 @@ func TestCreateAppDeleteValidUUID(t *testing.T) {
 	}
 
 	// Check if the data was deleted from the storage backend
-	_, _, err := storage.Retrieve(id)
-	if err == nil {
-		t.Errorf("CreateApp() DELETE /delete/valid-uuid = %v, want %v", err, "error")
+	_, err := backend.Claim(id, time.Minute)
+	if !errors.Is(err, storage.ErrSecretUnavailable) {
+		t.Errorf("Claim() after delete = %v, want ErrSecretUnavailable", err)
 	}
 }
 

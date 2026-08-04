@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,10 +15,12 @@ import (
 )
 
 type Record struct {
-	ID   string `dynamodbav:"id"`
-	Data []byte `dynamodbav:"data"`
-	Key  []byte `dynamodbav:"key"`
-	TTL  int64  `dynamodbav:"ttl"`
+	ID         string `dynamodbav:"id"`
+	Data       []byte `dynamodbav:"data"`
+	Key        []byte `dynamodbav:"key"`
+	TTL        int64  `dynamodbav:"ttl"`
+	ClaimToken string `dynamodbav:"claim_token,omitempty"`
+	ClaimUntil int64  `dynamodbav:"claim_until,omitempty"`
 }
 
 type DynamoDBBackend struct {
@@ -121,35 +124,109 @@ func (b *DynamoDBBackend) Store(data, key []byte, ttl int64) (uuid.UUID, error) 
 	return id, nil
 }
 
-func (b *DynamoDBBackend) Retrieve(id uuid.UUID) ([]byte, []byte, error) {
-	record, err := b.client.GetItem(context.TODO(), &dynamodb.GetItemInput{
+// Claim atomically reserves an unclaimed or abandoned secret and returns its data.
+func (b *DynamoDBBackend) Claim(id uuid.UUID, lease time.Duration) (ClaimedSecret, error) {
+	if lease <= 0 {
+		return ClaimedSecret{}, fmt.Errorf("claim lease must be positive")
+	}
+
+	now := time.Now()
+	token := uuid.New()
+	updateExpression := "SET #claim_token = :claim_token, #claim_until = :claim_until"
+	conditionExpression := "attribute_exists(#id) AND #ttl >= :now AND (attribute_not_exists(#claim_until) OR #claim_until <= :now)"
+	record, err := b.client.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: id.String()},
 		},
-		TableName: &b.table_name,
+		TableName:           &b.table_name,
+		UpdateExpression:    &updateExpression,
+		ConditionExpression: &conditionExpression,
+		ExpressionAttributeNames: map[string]string{
+			"#id":          "id",
+			"#ttl":         "ttl",
+			"#claim_token": "claim_token",
+			"#claim_until": "claim_until",
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":now":         &types.AttributeValueMemberN{Value: fmt.Sprint(now.Unix())},
+			":claim_token": &types.AttributeValueMemberS{Value: token.String()},
+			":claim_until": &types.AttributeValueMemberN{Value: fmt.Sprint(now.Add(lease).Unix())},
+		},
+		ReturnValues: types.ReturnValueAllNew,
 	})
 
 	if err != nil {
-		return nil, nil, err
+		if isConditionalCheckFailed(err) {
+			return ClaimedSecret{}, ErrSecretUnavailable
+		}
+		return ClaimedSecret{}, err
 	}
 
-	if record.Item == nil {
-		return nil, nil, nil
+	if record.Attributes == nil {
+		return ClaimedSecret{}, ErrSecretUnavailable
 	}
 
 	var r Record
-
-	err = attributevalue.UnmarshalMap(record.Item, &r)
-
+	err = attributevalue.UnmarshalMap(record.Attributes, &r)
 	if err != nil {
-		return nil, nil, err
+		return ClaimedSecret{}, err
 	}
 
-	// Check if TTL timestamp is less than current unix time
-	if r.TTL < time.Now().Unix() {
-		b.Delete(id)
-		return nil, nil, fmt.Errorf("UUID not found")
-	}
+	return ClaimedSecret{Data: r.Data, Key: r.Key, Token: token}, nil
+}
 
-	return r.Data, r.Key, nil
+// Consume permanently deletes a secret if the caller still owns an active claim.
+func (b *DynamoDBBackend) Consume(id, token uuid.UUID) error {
+	conditionExpression := "#claim_token = :claim_token AND #claim_until > :now"
+	_, err := b.client.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
+		Key: map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberS{Value: id.String()},
+		},
+		TableName:           &b.table_name,
+		ConditionExpression: &conditionExpression,
+		ExpressionAttributeNames: map[string]string{
+			"#claim_token": "claim_token",
+			"#claim_until": "claim_until",
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":claim_token": &types.AttributeValueMemberS{Value: token.String()},
+			":now":         &types.AttributeValueMemberN{Value: fmt.Sprint(time.Now().Unix())},
+		},
+	})
+
+	if isConditionalCheckFailed(err) {
+		return ErrClaimLost
+	}
+	return err
+}
+
+// Release clears a claim if the caller still owns it, allowing an immediate retry.
+func (b *DynamoDBBackend) Release(id, token uuid.UUID) error {
+	updateExpression := "REMOVE #claim_token, #claim_until"
+	conditionExpression := "#claim_token = :claim_token"
+	_, err := b.client.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+		Key: map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberS{Value: id.String()},
+		},
+		TableName:           &b.table_name,
+		UpdateExpression:    &updateExpression,
+		ConditionExpression: &conditionExpression,
+		ExpressionAttributeNames: map[string]string{
+			"#claim_token": "claim_token",
+			"#claim_until": "claim_until",
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":claim_token": &types.AttributeValueMemberS{Value: token.String()},
+		},
+	})
+
+	if isConditionalCheckFailed(err) {
+		return ErrClaimLost
+	}
+	return err
+}
+
+func isConditionalCheckFailed(err error) bool {
+	var conditionFailed *types.ConditionalCheckFailedException
+	return errors.As(err, &conditionFailed)
 }
