@@ -10,7 +10,10 @@ on:
   pull_request:
     paths:
       - "aws/**"
-      - ".github/workflows/security_scan_terraform.yml" 
+      - ".github/workflows/security_scan_terraform.yml"
+
+permissions:
+  contents: read
 
 jobs:
   terraform-security-scan:
