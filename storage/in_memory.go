@@ -91,13 +91,13 @@ func (b *InMemoryStorageBackend) Claim(id uuid.UUID, lease time.Duration) (Claim
 
 	secret, ok := b.data[id]
 	if !ok {
-		return ClaimedSecret{}, ErrSecretUnavailable
+		return ClaimedSecret{}, ErrSecretNotFound
 	}
 
 	now := time.Now()
 	if secret.TTL < now.Unix() {
 		delete(b.data, id)
-		return ClaimedSecret{}, ErrSecretUnavailable
+		return ClaimedSecret{}, ErrSecretNotFound
 	}
 
 	if secret.ClaimToken != uuid.Nil && secret.ClaimUntil.After(now) {

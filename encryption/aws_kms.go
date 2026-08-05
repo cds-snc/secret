@@ -77,6 +77,10 @@ func (a *AwsKmsEncryption) Encrypt(plaintext []byte) ([]byte, []byte, error) {
 }
 
 func (a *AwsKmsEncryption) Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
+	if err := validateGCMCiphertext(ciphertext); err != nil {
+		return nil, err
+	}
+
 	// Decrypt the CipherTextBlob with the KMS key
 	result, err := a.client.Decrypt(context.TODO(), &kms.DecryptInput{
 		CiphertextBlob: key,
@@ -97,6 +101,9 @@ func (a *AwsKmsEncryption) Decrypt(ciphertext []byte, key []byte) ([]byte, error
 	}
 
 	nonceSize := gcm.NonceSize()
+	if len(ciphertext) < nonceSize+gcm.Overhead() {
+		return nil, ErrInvalidCiphertext
+	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)

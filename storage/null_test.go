@@ -46,8 +46,8 @@ func TestNullBackendClaim(t *testing.T) {
 	backend := NullBackend{}
 	id := uuid.New()
 	_, err := backend.Claim(id, time.Minute)
-	if !errors.Is(err, ErrSecretUnavailable) {
-		t.Errorf("Claim() = %v, want ErrSecretUnavailable", err)
+	if !errors.Is(err, ErrSecretNotFound) {
+		t.Errorf("Claim() = %v, want ErrSecretNotFound", err)
 	}
 }
 

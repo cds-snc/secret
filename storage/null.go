@@ -11,7 +11,7 @@ import (
 type NullBackend struct{}
 
 func (b *NullBackend) Claim(id uuid.UUID, lease time.Duration) (ClaimedSecret, error) {
-	return ClaimedSecret{}, ErrSecretUnavailable
+	return ClaimedSecret{}, ErrSecretNotFound
 }
 
 func (b *NullBackend) Consume(id, token uuid.UUID) error {

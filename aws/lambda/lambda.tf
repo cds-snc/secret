@@ -38,9 +38,10 @@ module "api" {
   ecr_arn   = var.ecr_arn
   image_uri = "${var.ecr_repository_url}:latest"
 
-  memory                 = 128
-  timeout                = 60
-  enable_lambda_insights = true
+  memory                         = 128
+  timeout                        = 60
+  enable_lambda_insights         = true
+  reserved_concurrent_executions = var.lambda_reserved_concurrent_executions
 
   policies = [
     data.aws_iam_policy_document.api_policies.json,

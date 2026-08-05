@@ -34,7 +34,6 @@ COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /etc/group /etc/group
 COPY --from=build --chown=${USER}:${USER} /server /server
-COPY --from=build --chown=${USER}:${USER} /app/keys /keys
 COPY --from=build --chown=${USER}:${USER} /app/locales /locales
 COPY --from=build --chown=${USER}:${USER} /app/views /views
 

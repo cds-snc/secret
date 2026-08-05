@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	ErrSecretNotFound    = errors.New("secret not found")
 	ErrSecretUnavailable = errors.New("secret not found, expired, or already claimed")
 	ErrClaimLost         = errors.New("secret claim is no longer valid")
 )

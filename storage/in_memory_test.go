@@ -31,8 +31,8 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("Delete() failed: %v", err)
 	}
 
-	if _, err := backend.Claim(id, testClaimLease); !errors.Is(err, ErrSecretUnavailable) {
-		t.Fatalf("Claim() after Delete() = %v, want ErrSecretUnavailable", err)
+	if _, err := backend.Claim(id, testClaimLease); !errors.Is(err, ErrSecretNotFound) {
+		t.Fatalf("Claim() after Delete() = %v, want ErrSecretNotFound", err)
 	}
 }
 
@@ -91,8 +91,8 @@ func TestClaimAndConsume(t *testing.T) {
 	if err := backend.Consume(id, claim.Token); err != nil {
 		t.Fatalf("Consume() failed: %v", err)
 	}
-	if _, err := backend.Claim(id, testClaimLease); !errors.Is(err, ErrSecretUnavailable) {
-		t.Fatalf("Claim() after Consume() = %v, want ErrSecretUnavailable", err)
+	if _, err := backend.Claim(id, testClaimLease); !errors.Is(err, ErrSecretNotFound) {
+		t.Fatalf("Claim() after Consume() = %v, want ErrSecretNotFound", err)
 	}
 }
 
@@ -103,8 +103,8 @@ func TestClaimExpiredOrMissingSecret(t *testing.T) {
 	id, _ := backend.Store([]byte("data"), []byte("key"), time.Now().Add(-time.Hour).Unix(), false)
 
 	for _, testID := range []uuid.UUID{id, uuid.New()} {
-		if _, err := backend.Claim(testID, testClaimLease); !errors.Is(err, ErrSecretUnavailable) {
-			t.Fatalf("Claim(%s) = %v, want ErrSecretUnavailable", testID, err)
+		if _, err := backend.Claim(testID, testClaimLease); !errors.Is(err, ErrSecretNotFound) {
+			t.Fatalf("Claim(%s) = %v, want ErrSecretNotFound", testID, err)
 		}
 	}
 }

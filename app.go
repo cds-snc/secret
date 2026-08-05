@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -28,6 +29,12 @@ const CLIENT_ENCRYPTION_ITERATIONS = 600_000
 // a request cannot lose its claim while it is still able to return a response.
 const SECRET_CLAIM_LEASE = 90 * time.Second
 
+var (
+	errInvalidTTL                      = errors.New("invalid TTL")
+	errSecretTooLong                   = errors.New("secret too long")
+	errInvalidClientEncryptionEnvelope = errors.New("invalid client encryption envelope")
+)
+
 type AppConfig struct {
 	RequireAdditionalPassword bool
 }
@@ -40,11 +47,11 @@ func AppConfigFromEnv() AppConfig {
 	}
 }
 
-func CreateApp(encryption encryption.EncryptionBackend, storage storage.StorageBackend) *fiber.App {
-	return CreateAppWithConfig(encryption, storage, AppConfigFromEnv())
+func CreateApp(encryptionBackend encryption.EncryptionBackend, storageBackend storage.StorageBackend) *fiber.App {
+	return CreateAppWithConfig(encryptionBackend, storageBackend, AppConfigFromEnv())
 }
 
-func CreateAppWithConfig(encryption encryption.EncryptionBackend, storage storage.StorageBackend, config AppConfig) *fiber.App {
+func CreateAppWithConfig(encryptionBackend encryption.EncryptionBackend, storageBackend storage.StorageBackend, config AppConfig) *fiber.App {
 	engine := html.New("./views", ".html")
 
 	locales := loadLocales()
@@ -124,33 +131,36 @@ Preferred-Languages: en, fr`
 		}
 
 		// Atomically reserve the secret so concurrent requests cannot both decrypt it.
-		claimedSecret, err := storage.Claim(id, SECRET_CLAIM_LEASE)
+		claimedSecret, err := storageBackend.Claim(id, SECRET_CLAIM_LEASE)
 		if err != nil {
 			log.Warn(err)
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid UUID")
+			if errors.Is(err, storage.ErrSecretNotFound) || errors.Is(err, storage.ErrSecretUnavailable) {
+				return c.Status(fiber.StatusNotFound).SendString("Secret not found")
+			}
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
 		}
 
 		claimActive := true
 		defer func() {
 			if claimActive {
-				if releaseErr := storage.Release(id, claimedSecret.Token); releaseErr != nil {
+				if releaseErr := storageBackend.Release(id, claimedSecret.Token); releaseErr != nil {
 					log.Error(releaseErr)
 				}
 			}
 		}()
 
 		//Decrypt the data
-		decryptedData, err := encryption.Decrypt(claimedSecret.Data, claimedSecret.Key)
+		decryptedData, err := encryptionBackend.Decrypt(claimedSecret.Data, claimedSecret.Key)
 		if err != nil {
 			log.Error(err)
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid UUID")
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
 		}
 
 		// Consume only the claim owned by this request before revealing the secret.
-		err = storage.Consume(id, claimedSecret.Token)
+		err = storageBackend.Consume(id, claimedSecret.Token)
 		if err != nil {
 			log.Error(err)
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid UUID")
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
 		}
 		claimActive = false
 
@@ -175,10 +185,10 @@ Preferred-Languages: en, fr`
 		}
 
 		//Delete the data from the storage backend
-		err = storage.Delete(id)
+		err = storageBackend.Delete(id)
 		if err != nil {
 			log.Error(err)
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid UUID")
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
 		}
 
 		return c.JSON(fiber.Map{
@@ -204,11 +214,16 @@ Preferred-Languages: en, fr`
 		}
 
 		// Encrypt and save the data
-		id, err := encryptAndSave(body.Body, body.TTL, body.ClientEncrypted, encryption, storage)
+		id, err := encryptAndSave(body.Body, body.TTL, body.ClientEncrypted, encryptionBackend, storageBackend)
 
 		if err != nil {
 			log.Error(err)
-			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+			if errors.Is(err, errInvalidTTL) ||
+				errors.Is(err, errSecretTooLong) ||
+				errors.Is(err, errInvalidClientEncryptionEnvelope) {
+				return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+			}
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
 		}
 
 		// Return a JSON response with the UUID
@@ -225,17 +240,17 @@ func encryptAndSave(body string, ttl int64, clientEncrypted bool, encryption enc
 	currentTimestamp := time.Now().Unix()
 	if ttl < currentTimestamp || ttl > currentTimestamp+(MAX_AGE_IN_DAYS*24*60*60) {
 		log.Error("Invalid TTL")
-		return "", fmt.Errorf("invalid TTL")
+		return "", errInvalidTTL
 	}
 
 	// Validate the body
 	if len(body) > MAX_SECRET_LENGTH {
 		log.Error("Secret too long")
-		return "", fmt.Errorf("secret too long")
+		return "", errSecretTooLong
 	}
 	if clientEncrypted && !isClientEncryptionEnvelope(body) {
 		log.Error("Invalid client encryption envelope")
-		return "", fmt.Errorf("invalid client encryption envelope")
+		return "", errInvalidClientEncryptionEnvelope
 	}
 
 	// Encrypt the data

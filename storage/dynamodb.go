@@ -154,18 +154,19 @@ func (b *DynamoDBBackend) Claim(id uuid.UUID, lease time.Duration) (ClaimedSecre
 			":claim_token": &types.AttributeValueMemberS{Value: token.String()},
 			":claim_until": &types.AttributeValueMemberN{Value: fmt.Sprint(now.Add(lease).Unix())},
 		},
-		ReturnValues: types.ReturnValueAllNew,
+		ReturnValues:                        types.ReturnValueAllNew,
+		ReturnValuesOnConditionCheckFailure: types.ReturnValuesOnConditionCheckFailureAllOld,
 	})
 
 	if err != nil {
-		if isConditionalCheckFailed(err) {
-			return ClaimedSecret{}, ErrSecretUnavailable
+		if conditionErr := secretClaimConditionError(err); conditionErr != nil {
+			return ClaimedSecret{}, conditionErr
 		}
 		return ClaimedSecret{}, err
 	}
 
 	if record.Attributes == nil {
-		return ClaimedSecret{}, ErrSecretUnavailable
+		return ClaimedSecret{}, ErrSecretNotFound
 	}
 
 	var r Record
@@ -236,4 +237,15 @@ func (b *DynamoDBBackend) Release(id, token uuid.UUID) error {
 func isConditionalCheckFailed(err error) bool {
 	var conditionFailed *types.ConditionalCheckFailedException
 	return errors.As(err, &conditionFailed)
+}
+
+func secretClaimConditionError(err error) error {
+	var conditionFailed *types.ConditionalCheckFailedException
+	if !errors.As(err, &conditionFailed) {
+		return nil
+	}
+	if len(conditionFailed.Item) == 0 {
+		return ErrSecretNotFound
+	}
+	return ErrSecretUnavailable
 }

@@ -1,8 +1,20 @@
 package encryption
 
 import (
+	"errors"
 	"testing"
 )
+
+func TestRsaKeyPairDecryptRejectsShortCiphertext(t *testing.T) {
+	t.Parallel()
+
+	encryption := RsaKeyPair{}
+	for _, ciphertext := range [][]byte{nil, make([]byte, standardGCMNonceSize), make([]byte, standardGCMNonceSize+standardGCMTagSize-1)} {
+		if _, err := encryption.Decrypt(ciphertext, nil); !errors.Is(err, ErrInvalidCiphertext) {
+			t.Errorf("Decrypt() short ciphertext error = %v, want ErrInvalidCiphertext", err)
+		}
+	}
+}
 
 func TestRsaKeyPairInit(t *testing.T) {
 	t.Parallel()
