@@ -1,4 +1,4 @@
-FROM golang:1.26.3-alpine@sha256:91eda9776261207ea25fd06b5b7fed8d397dd2c0a283e77f2ab6e91bfa71079d as build
+FROM golang:1.27.1-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 as build
 
 ARG component=${component}
 
@@ -19,7 +19,7 @@ RUN adduser \
 COPY . .
 RUN go build -o /server /app/cmd/${component}/main.go
 
-FROM alpine:latest@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659 as certs
+FROM alpine:latest@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b as certs
 RUN apk --update add ca-certificates
 
 FROM scratch 
@@ -34,7 +34,6 @@ COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /etc/group /etc/group
 COPY --from=build --chown=${USER}:${USER} /server /server
-COPY --from=build --chown=${USER}:${USER} /app/keys /keys
 COPY --from=build --chown=${USER}:${USER} /app/locales /locales
 COPY --from=build --chown=${USER}:${USER} /app/views /views
 

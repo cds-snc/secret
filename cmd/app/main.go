@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	app "github.com/cds-snc/secret"
 	"github.com/cds-snc/secret/encryption"
@@ -11,8 +12,8 @@ import (
 func main() {
 	encryption := &encryption.RsaKeyPair{}
 	config := map[string]string{
-		"publicKeyPath":  "keys/public.pem",
-		"privateKeyPath": "keys/private.pem",
+		"publicKeyPath":  envOrDefault("PUBLIC_KEY_PATH", "keys/public.pem"),
+		"privateKeyPath": envOrDefault("PRIVATE_KEY_PATH", "keys/private.pem"),
 	}
 	err := encryption.Init(config)
 	if err != nil {
@@ -27,4 +28,11 @@ func main() {
 
 	app := app.CreateApp(encryption, storage)
 	log.Fatal(app.Listen(":3000"))
+}
+
+func envOrDefault(name, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
 }
