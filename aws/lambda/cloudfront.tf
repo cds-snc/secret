@@ -1,7 +1,8 @@
 resource "aws_cloudfront_distribution" "api" {
-  enabled     = true
-  aliases     = [var.domain]
-  price_class = "PriceClass_100"
+  enabled             = true
+  aliases             = [var.domain]
+  price_class         = "PriceClass_100"
+  default_root_object = "index.html"
 
   origin {
     domain_name = split("/", aws_lambda_function_url.api.function_url)[2]

@@ -51,13 +51,18 @@ func CreateAppWithConfig(encryption encryption.EncryptionBackend, storage storag
 		Views: engine,
 	})
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	renderIndex := func(c *fiber.Ctx) error {
 		return c.Render("index", fiber.Map{
 			"Lang":                      "en",
 			"OtherLang":                 getOtherLanguage("en"),
 			"RequireAdditionalPassword": config.RequireAdditionalPassword,
 		}, "base")
-	})
+	}
+
+	app.Get("/", renderIndex)
+
+	// Served when CloudFront resolves its default root object for "/"
+	app.Get("/index.html", renderIndex)
 
 	app.Get("/version", func(c *fiber.Ctx) error {
 		version := os.Getenv("GIT_SHA")
