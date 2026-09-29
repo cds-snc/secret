@@ -75,7 +75,7 @@ resource "aws_lambda_permission" "api_invoke_function_url" {
 resource "aws_lambda_permission" "api_invoke_function" {
   statement_id  = "AllowInvokeFunction"
   action        = "lambda:InvokeFunction"
-
+  function_name = module.api.function_name
   principal     = "cloudfront.amazonaws.com"
   source_arn    = aws_cloudfront_distribution.api.arn
 }
