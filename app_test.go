@@ -102,6 +102,26 @@ func TestCreateAppGetHome(t *testing.T) {
 	}
 }
 
+func TestCreateAppGetIndexHtml(t *testing.T) {
+	t.Parallel()
+
+	// CloudFront's default_root_object rewrites "/" to "/index.html"
+	app := CreateApp(&encryption.NullEncryption{}, &storage.NullBackend{})
+
+	req := httptest.NewRequest("GET", "/index.html", nil)
+	resp, _ := app.Test(req)
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Errorf("CreateApp() GET /index.html = %v, want %v", resp.StatusCode, fiber.StatusOK)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+
+	if !strings.Contains(string(body), "generate-div") {
+		t.Errorf("CreateApp() GET /index.html = %v, want %v", string(body), "generate-div")
+	}
+}
+
 func TestCreateAppRendersVersionedClientEncryption(t *testing.T) {
 	t.Parallel()
 
