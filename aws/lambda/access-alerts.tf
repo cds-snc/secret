@@ -213,7 +213,7 @@ resource "aws_cloudtrail" "access_alerts" {
   # checkov:skip=CKV2_AWS_10:EventBridge consumes CloudTrail events directly for these alerts; CloudWatch Logs delivery would duplicate the S3 log archive.
   name                          = local.access_alerts_trail_name
   s3_bucket_name                = module.access_alerts_cloudtrail_bucket.s3_bucket_id
-  include_global_service_events = false
+  include_global_service_events = true
   is_multi_region_trail         = false
   enable_log_file_validation    = true
   kms_key_id                    = aws_kms_key.access_alerts_cloudtrail.arn
