@@ -217,32 +217,15 @@ resource "aws_cloudtrail" "access_alerts" {
   enable_log_file_validation    = true
   kms_key_id                    = aws_kms_key.access_alerts_cloudtrail.arn
 
-  advanced_event_selector {
-    name = "Unexpected DynamoDB table access"
+  # Classic selector so compliance scanners that only read EventSelectors see it; the
+  # EventBridge rule filters out the API lambda principal.
+  event_selector {
+    read_write_type           = "All"
+    include_management_events = false
 
-    field_selector {
-      field  = "eventCategory"
-      equals = ["Data"]
-    }
-
-    field_selector {
-      field  = "eventSource"
-      equals = ["dynamodb.amazonaws.com"]
-    }
-
-    field_selector {
-      field  = "resources.type"
-      equals = ["AWS::DynamoDB::Table"]
-    }
-
-    field_selector {
-      field  = "resources.ARN"
-      equals = [aws_dynamodb_table.dynamodb-table.arn]
-    }
-
-    field_selector {
-      field           = "userIdentity.arn"
-      not_starts_with = [local.api_lambda_assumed_role_arn_prefix]
+    data_resource {
+      type   = "AWS::DynamoDB::Table"
+      values = [aws_dynamodb_table.dynamodb-table.arn]
     }
   }
 
